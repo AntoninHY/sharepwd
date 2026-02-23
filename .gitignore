@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build
+.next/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+!deploy/.env.example
+
+# Docker
+docker-compose.override.yml
+
+# Go
+vendor/
+*.test
+
+# Data
+/data/
+node_modules/

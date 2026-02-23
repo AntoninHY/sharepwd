@@ -1,0 +1,19 @@
+# Binaries
+server
+cli
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test
+*.test
+*.out
+coverage.txt
+
+# Vendor
+vendor/
+
+# IDE
+.idea/
+.vscode/

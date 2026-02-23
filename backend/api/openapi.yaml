@@ -1,0 +1,337 @@
+openapi: "3.0.3"
+info:
+  title: SharePwd API
+  description: Zero-knowledge encrypted secret sharing API
+  version: "1.0.0"
+  contact:
+    name: JIZO AI
+    url: https://jizo.ai
+  license:
+    name: AGPLv3
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+
+servers:
+  - url: https://sharepwd.io/v1
+    description: Production
+  - url: http://localhost:8080/v1
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: health
+      tags: [System]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /secrets:
+    post:
+      summary: Create a new encrypted secret
+      operationId: createSecret
+      tags: [Secrets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSecretRequest"
+      responses:
+        "201":
+          description: Secret created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSecretResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /secrets/{token}:
+    get:
+      summary: Get secret metadata
+      operationId: getSecretMetadata
+      tags: [Secrets]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Secret metadata with challenge nonce
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretMetadata"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      summary: Delete a secret
+      operationId: deleteSecret
+      tags: [Secrets]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteSecretRequest"
+      responses:
+        "204":
+          description: Secret deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /secrets/{token}/reveal:
+    post:
+      summary: Reveal encrypted secret data
+      operationId: revealSecret
+      tags: [Secrets]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevealSecretRequest"
+      responses:
+        "200":
+          description: Encrypted secret data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevealSecretResponse"
+        "403":
+          description: Invalid challenge nonce
+        "410":
+          description: Secret expired
+
+  /api-keys:
+    post:
+      summary: Create an API key
+      operationId: createAPIKey
+      tags: [API Keys]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAPIKeyRequest"
+      responses:
+        "201":
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateAPIKeyResponse"
+    get:
+      summary: List API keys
+      operationId: listAPIKeys
+      tags: [API Keys]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of API keys
+
+  /api-keys/{id}:
+    delete:
+      summary: Revoke an API key
+      operationId: revokeAPIKey
+      tags: [API Keys]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: API key revoked
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    CreateSecretRequest:
+      type: object
+      required: [encrypted_data, iv]
+      properties:
+        encrypted_data:
+          type: string
+          description: Base64-encoded ciphertext
+        iv:
+          type: string
+          description: Base64-encoded IV
+        salt:
+          type: string
+          nullable: true
+          description: Base64-encoded PBKDF2 salt
+        max_views:
+          type: integer
+          nullable: true
+        expires_in:
+          type: string
+          nullable: true
+          description: Duration (e.g. 1h, 24h)
+        burn_after_read:
+          type: boolean
+          default: false
+        content_type:
+          type: string
+          enum: [text, file]
+          default: text
+
+    CreateSecretResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        creator_token:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    SecretMetadata:
+      type: object
+      properties:
+        access_token:
+          type: string
+        has_passphrase:
+          type: boolean
+        content_type:
+          type: string
+        max_views:
+          type: integer
+          nullable: true
+        current_views:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        burn_after_read:
+          type: boolean
+        is_expired:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        challenge_nonce:
+          type: string
+
+    RevealSecretRequest:
+      type: object
+      required: [challenge_nonce]
+      properties:
+        challenge_nonce:
+          type: string
+
+    RevealSecretResponse:
+      type: object
+      properties:
+        encrypted_data:
+          type: string
+        iv:
+          type: string
+        salt:
+          type: string
+          nullable: true
+
+    DeleteSecretRequest:
+      type: object
+      required: [creator_token]
+      properties:
+        creator_token:
+          type: string
+
+    CreateAPIKeyRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        rate_limit:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+
+    CreateAPIKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+        key_prefix:
+          type: string
+        name:
+          type: string
+        rate_limit:
+          type: integer
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    RateLimited:
+      description: Rate limited
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer

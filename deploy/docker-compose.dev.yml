@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      target: dev
+    volumes:
+      - ../backend:/app
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      target: dev
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+
+  nginx:
+    profiles:
+      - disabled
