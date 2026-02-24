@@ -1,0 +1,7 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#09090b"/>
+  <text x="600" y="260" font-family="sans-serif" font-size="80" font-weight="bold" fill="#FACC15" text-anchor="middle">SharePwd</text>
+  <text x="600" y="320" font-family="sans-serif" font-size="32" fill="#FFFFFF" text-anchor="middle">Burn After Reading</text>
+  <text x="600" y="380" font-family="sans-serif" font-size="20" fill="#A1A1AA" text-anchor="middle">Share secrets that self-destruct. Zero-knowledge encryption.</text>
+  <text x="600" y="430" font-family="sans-serif" font-size="16" fill="#71717A" text-anchor="middle">Built by JIZO AI</text>
+</svg>

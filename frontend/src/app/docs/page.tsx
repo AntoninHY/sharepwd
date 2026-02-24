@@ -1,3 +1,14 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "API Documentation",
+  description:
+    "SharePwd REST API documentation. Create, retrieve, and manage self-destructing encrypted secrets programmatically.",
+  alternates: {
+    canonical: "/docs",
+  },
+};
+
 export default function DocsPage() {
   return (
     <div className="max-w-3xl mx-auto prose prose-invert">
