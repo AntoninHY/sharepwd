@@ -85,7 +85,6 @@ services:
       DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-changeme}@postgres:5432/umami
       DISABLE_UPDATES: "true"
       APP_SECRET: ${UMAMI_APP_SECRET:-changeme}
-      BASE_PATH: /analytics
     ports:
       - "127.0.0.1:3001:3000"
     depends_on:
