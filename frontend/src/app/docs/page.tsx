@@ -12,16 +12,22 @@ export default function DocsPage() {
 
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-4">Authentication</h2>
-        <p className="text-muted-foreground mb-4">
-          Public endpoints do not require authentication. Rate limited to 30 requests/minute per IP.
-        </p>
         <p className="text-muted-foreground">
-          For higher limits, create an API key and include it in requests:
+          All endpoints are public and do not require authentication. Rate limited to 30 requests/minute per IP.
+        </p>
+      </section>
+
+      {/* TODO: Uncomment when paid plans with API keys are implemented
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold mb-4">API Keys</h2>
+        <p className="text-muted-foreground mb-4">
+          For higher rate limits, create an API key and include it in requests:
         </p>
         <code className="block rounded-lg bg-muted px-4 py-3 text-sm mt-2">
           Authorization: Bearer spwd_your_api_key_here
         </code>
       </section>
+      */}
 
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-4">Endpoints</h2>
@@ -91,6 +97,16 @@ export default function DocsPage() {
             <p className="text-sm text-muted-foreground">Health check endpoint.</p>
           </div>
         </div>
+      </section>
+
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold mb-4">Rate Limits</h2>
+        <p className="text-muted-foreground mb-4">
+          All endpoints are rate limited to <strong>30 requests per minute</strong> per IP address.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          When the limit is exceeded, the API returns <code className="text-xs bg-muted px-1.5 py-0.5 rounded">429 Too Many Requests</code>.
+        </p>
       </section>
 
       <section className="mb-12">
