@@ -184,11 +184,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer CTA */}
+      {/* CTA */}
       <section className="text-center">
-        <p className="text-muted-foreground mb-6">
-          Built by the cybersecurity team at JIZO AI.
-        </p>
         <a
           href="/create"
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"

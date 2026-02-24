@@ -25,9 +25,9 @@ export const metadata: Metadata = {
     "one-time secret",
     "sharepwd",
   ],
-  authors: [{ name: "JIZO AI", url: "https://jizo.ai" }],
-  creator: "JIZO AI",
-  publisher: "JIZO AI",
+  authors: [{ name: "Jizô AI", url: "https://jizo.ai" }],
+  creator: "Jizô AI",
+  publisher: "Jizô AI",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -65,7 +65,7 @@ const jsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "JIZO AI",
+    name: "Jizô AI",
     url: "https://jizo.ai",
     logo: "https://jizo.ai/logo.png",
   },
@@ -85,7 +85,7 @@ const jsonLd = [
     },
     author: {
       "@type": "Organization",
-      name: "JIZO AI",
+      name: "Jizô AI",
       url: "https://jizo.ai",
     },
   },
@@ -106,7 +106,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-screen bg-background antialiased">
+      <body className="min-h-screen flex flex-col bg-background antialiased">
         {umamiWebsiteId && (
           <script
             src="/analytics/script.js"
@@ -131,9 +131,30 @@ export default function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="mx-auto max-w-5xl px-4 py-8">
+        <main className="mx-auto max-w-5xl px-4 py-8 flex-1 w-full">
           {children}
         </main>
+        <footer className="border-t border-border mt-auto">
+          <div className="mx-auto max-w-5xl px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-foreground">SharePwd</span>
+              <span className="text-muted-foreground/60">© 2026</span>
+            </div>
+            <nav className="flex items-center gap-6">
+              <a href="/create" className="hover:text-foreground transition-colors">Share a Secret</a>
+              <a href="/docs" className="hover:text-foreground transition-colors">API Docs</a>
+            </nav>
+            <span>
+              Built by{" "}
+              <a href="https://jizo.ai" target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-primary transition-colors">
+                Jizô AI
+              </a>
+            </span>
+          </div>
+          <div className="mx-auto max-w-5xl px-4 pb-6 text-center text-xs text-muted-foreground/50">
+            Zero-knowledge encryption — your data never touches our servers in plaintext.
+          </div>
+        </footer>
         <Toaster theme="dark" position="bottom-right" />
       </body>
     </html>
