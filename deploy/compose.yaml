@@ -6,8 +6,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-sharepwd}
       POSTGRES_USER: ${POSTGRES_USER:-sharepwd}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      UMAMI_DB_PASSWORD: ${UMAMI_DB_PASSWORD:-changeme}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-umami.sh:/docker-entrypoint-initdb.d/init-umami.sh:ro
     ports:
       - "127.0.0.1:5432:5432"
     healthcheck:
@@ -65,6 +67,8 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
@@ -73,6 +77,20 @@ services:
       - "127.0.0.1:3000:3000"
     depends_on:
       - backend
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-changeme}@postgres:5432/umami
+      DISABLE_UPDATES: "true"
+      APP_SECRET: ${UMAMI_APP_SECRET:-changeme}
+      BASE_PATH: /analytics
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   nginx:
     image: nginx:alpine
@@ -87,6 +105,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - umami
 
 volumes:
   postgres_data:

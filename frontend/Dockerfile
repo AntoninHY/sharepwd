@@ -3,6 +3,8 @@ FROM node:22-alpine AS base
 # Dev stage
 FROM base AS dev
 WORKDIR /app
+ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID
+ENV NEXT_PUBLIC_UMAMI_WEBSITE_ID=$NEXT_PUBLIC_UMAMI_WEBSITE_ID
 COPY package.json ./
 RUN npm install
 COPY . .
@@ -13,6 +15,8 @@ CMD ["npm", "run", "dev"]
 # Build stage
 FROM base AS builder
 WORKDIR /app
+ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID
+ENV NEXT_PUBLIC_UMAMI_WEBSITE_ID=$NEXT_PUBLIC_UMAMI_WEBSITE_ID
 COPY package.json ./
 RUN npm install
 COPY . .
