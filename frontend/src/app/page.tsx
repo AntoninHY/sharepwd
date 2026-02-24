@@ -69,7 +69,7 @@ export default function Home() {
           <Zap className="h-8 w-8 text-primary mb-4" />
           <h3 className="font-semibold mb-2">File Sharing</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Share encrypted files up to 100MB. Chunked upload with client-side encryption.
+            Share encrypted files up to 5MB. Need more? Paid plans support up to 100MB+.
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-6 hover:border-primary/30 transition-colors">

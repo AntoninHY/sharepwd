@@ -13,7 +13,7 @@ type Config struct {
 	CORSOrigins      string        `envconfig:"CORS_ORIGINS" default:"http://localhost:3000"`
 	GracePeriod      time.Duration `envconfig:"GRACE_PERIOD" default:"2m"`
 	MaxTextSize      int64         `envconfig:"MAX_TEXT_SIZE" default:"102400"`
-	MaxFileSize      int64         `envconfig:"MAX_FILE_SIZE" default:"104857600"`
+	MaxFileSize      int64         `envconfig:"MAX_FILE_SIZE" default:"5242880"`
 	CleanupInterval  time.Duration `envconfig:"CLEANUP_INTERVAL" default:"60s"`
 
 	// S3 / MinIO

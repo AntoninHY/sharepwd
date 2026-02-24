@@ -8,7 +8,7 @@ import { api, type CreateSecretResponse } from "@/lib/api";
 import { EXPIRATION_OPTIONS, VIEW_OPTIONS } from "@/lib/types";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function FileUploadForm() {
   const [file, setFile] = useState<File | null>(null);
@@ -28,7 +28,7 @@ export default function FileUploadForm() {
     const dropped = e.dataTransfer.files[0];
     if (dropped) {
       if (dropped.size > MAX_FILE_SIZE) {
-        toast.error("File too large (max 100MB)");
+        toast.error("File too large (max 5MB)");
         return;
       }
       setFile(dropped);
@@ -39,7 +39,7 @@ export default function FileUploadForm() {
     const selected = e.target.files?.[0];
     if (selected) {
       if (selected.size > MAX_FILE_SIZE) {
-        toast.error("File too large (max 100MB)");
+        toast.error("File too large (max 5MB)");
         return;
       }
       setFile(selected);
@@ -174,7 +174,7 @@ export default function FileUploadForm() {
             <p className="text-sm text-muted-foreground">
               Drop a file here or click to browse
             </p>
-            <p className="text-xs text-muted-foreground mt-1">Max 100MB</p>
+            <p className="text-xs text-muted-foreground mt-1">Max 5MB — need more? <a href="mailto:contact@jizo.ai" className="text-primary hover:underline">Contact us</a></p>
           </>
         )}
       </div>
