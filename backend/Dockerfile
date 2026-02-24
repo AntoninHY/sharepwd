@@ -30,4 +30,5 @@ COPY --from=builder /bin/server /app/server
 COPY db/migrations /app/migrations
 
 EXPOSE 8080
+USER nobody
 CMD ["/app/server"]
