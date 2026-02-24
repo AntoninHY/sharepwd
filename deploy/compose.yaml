@@ -79,7 +79,11 @@ services:
       - backend
 
   umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
+    build:
+      context: https://github.com/umami-software/umami.git#v3.0.3
+      args:
+        DATABASE_TYPE: postgresql
+        BASE_PATH: /analytics
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-changeme}@postgres:5432/umami
