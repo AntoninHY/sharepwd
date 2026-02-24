@@ -61,6 +61,12 @@ func (s *SecretService) Create(ctx context.Context, req *model.CreateSecretReque
 		if err != nil {
 			return nil, fmt.Errorf("invalid expires_in duration: %w", err)
 		}
+		if d < 5*time.Minute {
+			return nil, fmt.Errorf("expires_in must be at least 5 minutes")
+		}
+		if d > 30*24*time.Hour {
+			return nil, fmt.Errorf("expires_in must be at most 30 days")
+		}
 		t := time.Now().Add(d)
 		secret.ExpiresAt = &t
 	}
@@ -126,44 +132,37 @@ func (s *SecretService) Reveal(ctx context.Context, token string) (*model.Reveal
 		return nil, fmt.Errorf("secret has expired")
 	}
 
-	if secret.ExpiresAt != nil && time.Now().After(*secret.ExpiresAt) {
-		_ = s.repo.MarkExpired(ctx, secret.ID)
-		return nil, fmt.Errorf("secret has expired")
-	}
-
-	if secret.MaxViews != nil && secret.CurrentViews >= *secret.MaxViews {
-		_ = s.repo.MarkExpired(ctx, secret.ID)
-		return nil, fmt.Errorf("secret has reached max views")
-	}
-
-	views, err := s.repo.IncrementViews(ctx, secret.ID)
+	// Atomic increment + check: prevents race condition on concurrent reveals
+	updated, err := s.repo.AtomicReveal(ctx, secret.ID)
 	if err != nil {
-		return nil, fmt.Errorf("increment views: %w", err)
+		// No rows returned means the secret is expired or max views reached
+		_ = s.repo.MarkExpired(ctx, secret.ID)
+		return nil, fmt.Errorf("secret has expired or reached max views")
 	}
 
 	shouldBurn := false
-	if secret.BurnAfterRead {
-		if secret.GraceUntil != nil && time.Now().After(*secret.GraceUntil) {
+	if updated.BurnAfterRead {
+		if updated.GraceUntil != nil && time.Now().After(*updated.GraceUntil) {
 			shouldBurn = true
-		} else if secret.GraceUntil == nil {
+		} else if updated.GraceUntil == nil {
 			shouldBurn = true
 		}
 	}
 
-	if secret.MaxViews != nil && views >= *secret.MaxViews {
+	if updated.MaxViews != nil && updated.CurrentViews >= *updated.MaxViews {
 		shouldBurn = true
 	}
 
 	if shouldBurn {
-		if err := s.repo.MarkExpired(ctx, secret.ID); err != nil {
+		if err := s.repo.MarkExpired(ctx, updated.ID); err != nil {
 			slog.Error("failed to mark secret expired", "error", err)
 		}
 	}
 
 	return &model.RevealSecretResponse{
-		EncryptedData: secret.EncryptedData,
-		IV:            secret.IV,
-		Salt:          secret.Salt,
+		EncryptedData: updated.EncryptedData,
+		IV:            updated.IV,
+		Salt:          updated.Salt,
 	}, nil
 }
 

@@ -93,6 +93,53 @@ func (r *SecretRepository) IncrementViews(ctx context.Context, id uuid.UUID) (in
 	return views, err
 }
 
+
+// AtomicReveal atomically increments views and returns the secret only if it hasn not exceeded max_views.
+// Returns nil if the secret is expired or has reached max views.
+func (r *SecretRepository) AtomicReveal(ctx context.Context, id uuid.UUID) (*model.Secret, error) {
+	query := `
+		UPDATE secrets 
+		SET current_views = current_views + 1, updated_at = NOW()
+		WHERE id = $1 
+		AND is_expired = false
+		AND (max_views IS NULL OR current_views < max_views)
+		AND (expires_at IS NULL OR expires_at > NOW())
+		RETURNING id, access_token, encrypted_data, iv, salt, max_views, current_views, 
+		expires_at, burn_after_read, grace_until, creator_token, content_type, 
+		is_expired, created_at, updated_at`
+
+	var s model.Secret
+	var expiresAt, graceUntil sql.NullTime
+	var salt sql.NullString
+	var maxViews sql.NullInt32
+
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&s.ID, &s.AccessToken, &s.EncryptedData, &s.IV, &salt,
+		&maxViews, &s.CurrentViews, &expiresAt, &s.BurnAfterRead,
+		&graceUntil, &s.CreatorToken, &s.ContentType,
+		&s.IsExpired, &s.CreatedAt, &s.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if salt.Valid {
+		s.Salt = &salt.String
+	}
+	if maxViews.Valid {
+		v := int(maxViews.Int32)
+		s.MaxViews = &v
+	}
+	if expiresAt.Valid {
+		s.ExpiresAt = &expiresAt.Time
+	}
+	if graceUntil.Valid {
+		s.GraceUntil = &graceUntil.Time
+	}
+
+	return &s, nil
+}
+
 func (r *SecretRepository) MarkExpired(ctx context.Context, id uuid.UUID) error {
 	query := `UPDATE secrets SET is_expired = true, expired_at = NOW(), 
 		encrypted_data = '', updated_at = NOW() WHERE id = $1`
@@ -116,6 +163,7 @@ func (r *SecretRepository) DeleteExpired(ctx context.Context) (int64, error) {
 	}
 	return result.RowsAffected(), nil
 }
+
 
 func (r *SecretRepository) MarkExpiredSecrets(ctx context.Context) (int64, error) {
 	query := `UPDATE secrets SET is_expired = true, expired_at = NOW(), encrypted_data = '', updated_at = NOW()

@@ -79,8 +79,11 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro
     depends_on:
       - backend
       - frontend
@@ -88,3 +91,4 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  certbot_webroot:

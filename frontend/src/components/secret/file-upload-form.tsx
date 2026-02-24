@@ -54,12 +54,14 @@ export default function FileUploadForm() {
     setProgress(0);
 
     try {
-      // Read the file
       const arrayBuffer = await file.arrayBuffer();
       const fileBytes = new Uint8Array(arrayBuffer);
 
-      // Encrypt the file content as a single blob for MVP
-      const fileBase64 = toBase64(fileBytes);
+      // Pack filename + file content together before encryption
+      const filePayload = JSON.stringify({
+        name: file.name,
+        data: toBase64(fileBytes),
+      });
 
       let encryptedData: string;
       let iv: string;
@@ -69,12 +71,12 @@ export default function FileUploadForm() {
       setProgress(30);
 
       if (passphrase) {
-        const result = await encryptWithPassphrase(fileBase64, passphrase);
+        const result = await encryptWithPassphrase(filePayload, passphrase);
         encryptedData = result.encryptedData;
         iv = result.iv;
         salt = result.salt;
       } else {
-        const result = await encryptText(fileBase64);
+        const result = await encryptText(filePayload);
         encryptedData = result.encryptedData;
         iv = result.iv;
         keyFragment = result.key;
@@ -82,7 +84,6 @@ export default function FileUploadForm() {
 
       setProgress(60);
 
-      // For MVP, we store the encrypted file as a text secret with metadata
       const response = await api.createSecret({
         encrypted_data: encryptedData,
         iv,

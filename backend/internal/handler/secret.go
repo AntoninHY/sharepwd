@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -32,7 +33,16 @@ func newNonceStore() *nonceStore {
 	return ns
 }
 
+const maxNonces = 100000
+
 func (ns *nonceStore) generate() (string, error) {
+	ns.mu.Lock()
+	if len(ns.store) >= maxNonces {
+		ns.mu.Unlock()
+		return "", fmt.Errorf("nonce store is full")
+	}
+	ns.mu.Unlock()
+
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
@@ -77,6 +87,8 @@ func NewSecretHandler(svc *service.SecretService) *SecretHandler {
 }
 
 func (h *SecretHandler) Create(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 512*1024) // 512KB max for text secrets
+
 	var req model.CreateSecretRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Download, Lock, AlertTriangle, Clock, Flame, Eye } from "lucide-react";
 import { decryptText, decryptWithPassphrase, fromBase64 } from "@/lib/crypto";
-import { api, type SecretMetadata } from "@/lib/api";
+import { api, type SecretMetadata, type RevealSecretResponse } from "@/lib/api";
 
 interface FileDownloadProps {
   token: string;
@@ -16,7 +16,9 @@ export default function FileDownload({ token }: FileDownloadProps) {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passphraseError, setPassphraseError] = useState<string | null>(null);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [revealedData, setRevealedData] = useState<RevealSecretResponse | null>(null);
   const pageLoadTime = useRef(Date.now());
 
   useEffect(() => {
@@ -47,6 +49,12 @@ export default function FileDownload({ token }: FileDownloadProps) {
     fetchMetadata();
   }, [token]);
 
+  const isDecryptionError = (err: unknown): boolean => {
+    if (!(err instanceof Error)) return false;
+    const msg = err.message.toLowerCase();
+    return msg.includes("decrypt") || msg.includes("operation") || msg.includes("tag") || msg.includes("gcm");
+  };
+
   const handleDownload = async () => {
     if (!metadata) return;
 
@@ -62,25 +70,42 @@ export default function FileDownload({ token }: FileDownloadProps) {
     }
 
     setDownloading(true);
+    setPassphraseError(null);
     try {
-      const revealed = await api.revealSecret(token, metadata.challenge_nonce);
+      const revealed = revealedData || await api.revealSecret(token, metadata.challenge_nonce);
+      if (!revealedData) setRevealedData(revealed);
+
       const keyFragment = window.location.hash.slice(1);
 
-      let decryptedBase64: string;
+      let decryptedPayload: string;
       if (metadata.has_passphrase) {
         if (!revealed.salt) throw new Error("Missing salt");
-        decryptedBase64 = await decryptWithPassphrase(revealed.encrypted_data, revealed.iv, revealed.salt, passphrase);
+        decryptedPayload = await decryptWithPassphrase(revealed.encrypted_data, revealed.iv, revealed.salt, passphrase);
       } else {
         if (!keyFragment) throw new Error("Missing encryption key in URL");
-        decryptedBase64 = await decryptText(revealed.encrypted_data, revealed.iv, keyFragment);
+        decryptedPayload = await decryptText(revealed.encrypted_data, revealed.iv, keyFragment);
       }
 
-      const fileBytes = fromBase64(decryptedBase64);
+      let fileName = "downloaded-file";
+      let fileBytes: Uint8Array;
+
+      try {
+        const parsed = JSON.parse(decryptedPayload);
+        if (parsed.name && parsed.data) {
+          fileName = parsed.name;
+          fileBytes = fromBase64(parsed.data);
+        } else {
+          fileBytes = fromBase64(decryptedPayload);
+        }
+      } catch {
+        fileBytes = fromBase64(decryptedPayload);
+      }
+
       const blob = new Blob([fileBytes as BlobPart]);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "decrypted-file";
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -88,11 +113,18 @@ export default function FileDownload({ token }: FileDownloadProps) {
 
       toast.success("File downloaded and decrypted");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to download file";
-      if (msg.includes("expired") || msg.includes("Gone")) {
-        setError("This file has expired or been deleted.");
+      if (isDecryptionError(err) && metadata.has_passphrase) {
+        setPassphraseError("Wrong passphrase. Please try again.");
+        setPassphrase("");
       } else {
-        setError(msg);
+        const msg = err instanceof Error ? err.message : "Failed to download file";
+        if (msg.includes("expired") || msg.includes("Gone")) {
+          setError("This file has expired or been deleted.");
+        } else if (isDecryptionError(err)) {
+          setError("Failed to decrypt. The link may be corrupted.");
+        } else {
+          setError(msg);
+        }
       }
     } finally {
       setDownloading(false);
@@ -140,11 +172,19 @@ export default function FileDownload({ token }: FileDownloadProps) {
               id="file-passphrase"
               type="password"
               value={passphrase}
-              onChange={(e) => setPassphrase(e.target.value)}
+              onChange={(e) => { setPassphrase(e.target.value); setPassphraseError(null); }}
               placeholder="Enter the passphrase"
-              className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className={`w-full rounded-lg border px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                passphraseError ? "border-destructive bg-destructive/5" : "border-border bg-background"
+              }`}
               onKeyDown={(e) => e.key === "Enter" && handleDownload()}
             />
+            {passphraseError && (
+              <p className="mt-2 text-sm text-destructive flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {passphraseError}
+              </p>
+            )}
           </div>
         )}
         <button

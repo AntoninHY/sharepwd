@@ -8,14 +8,14 @@
   --color-card: #18181b;
   --color-card-foreground: #fafafa;
   --color-border: #27272a;
-  --color-primary: #6d28d9;
-  --color-primary-foreground: #fafafa;
+  --color-primary: #FFF73F;
+  --color-primary-foreground: #09090b;
   --color-secondary: #27272a;
   --color-secondary-foreground: #fafafa;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #fafafa;
-  --color-accent: #7c3aed;
-  --color-accent-foreground: #fafafa;
+  --color-accent: #e6de38;
+  --color-accent-foreground: #09090b;
   --color-success: #16a34a;
   --color-warning: #d97706;
   --radius: 0.5rem;

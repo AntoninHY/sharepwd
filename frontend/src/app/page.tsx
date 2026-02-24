@@ -1,4 +1,4 @@
-import { Shield, Clock, Eye, Lock, Terminal, Zap, Code, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
+import { Shield, Clock, Eye, Lock, Terminal, Zap, Code, ArrowRight, CheckCircle2, XCircle, Flame } from "lucide-react";
 
 export default function Home() {
   return (
@@ -9,21 +9,19 @@ export default function Home() {
           <Shield className="h-3.5 w-3.5" />
           Zero-Knowledge Encryption
         </div>
-        <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 leading-tight">
-          Share secrets.
-          <br />
-          <span className="text-primary">Not risks.</span>
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-tight">
+          <span className="text-primary">Burn</span> After Reading.<br /><span className="text-2xl md:text-3xl text-muted-foreground font-medium">Share secrets. Not risks.</span>
         </h1>
         <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto">
-          End-to-end encrypted secret sharing built by a cybersecurity team.
-          Your data is encrypted in your browser — we literally cannot read it.
+          Share passwords and secrets that self-destruct.
+          Encrypted in your browser, unreadable on our servers, gone after viewing.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
             href="/create"
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            <Lock className="h-4 w-4" />
+            <Flame className="h-4 w-4" />
             Share a Secret
             <ArrowRight className="h-4 w-4" />
           </a>
@@ -47,10 +45,10 @@ export default function Home() {
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-6 hover:border-primary/30 transition-colors">
-          <Clock className="h-8 w-8 text-primary mb-4" />
-          <h3 className="font-semibold mb-2">Ephemeral by Design</h3>
+          <Flame className="h-8 w-8 text-primary mb-4" />
+          <h3 className="font-semibold mb-2">Burn After Reading</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Time-based expiration, view limits, and burn-after-read. Secrets self-destruct automatically.
+            Secrets self-destruct after viewing. Set view limits, time-based expiration, or one-time read. No traces left behind.
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-6 hover:border-primary/30 transition-colors">
@@ -104,8 +102,8 @@ export default function Home() {
           <div className="flex gap-6 items-start">
             <div className="shrink-0 w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">3</div>
             <div>
-              <h3 className="font-semibold mb-1">Share the link</h3>
-              <p className="text-sm text-muted-foreground">The encryption key is embedded in the URL fragment (#). Per HTTP spec, fragments are never sent to the server. The recipient decrypts locally.</p>
+              <h3 className="font-semibold mb-1">Share the link — it burns after reading</h3>
+              <p className="text-sm text-muted-foreground">The encryption key is embedded in the URL fragment (#), never sent to the server. The recipient decrypts locally, then the secret self-destructs.</p>
             </div>
           </div>
         </div>
@@ -127,7 +125,8 @@ export default function Home() {
 <span className="text-foreground">URL: https://sharepwd.io/s/abc123...#key456...</span>{"\n"}
 {"\n"}
 <span className="text-success">$</span> sharepwd pull https://sharepwd.io/s/abc123...#key456...{"\n"}
-<span className="text-foreground">db_password=S3cureP@ss!</span>
+<span className="text-foreground">db_password=S3cureP@ss!</span>{"\n"}
+<span className="text-destructive">Secret burned. This link is now dead.</span>
           </pre>
         </div>
       </section>
@@ -194,7 +193,7 @@ export default function Home() {
           href="/create"
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
         >
-          <Lock className="h-4 w-4" />
+          <Flame className="h-4 w-4" />
           Start Sharing Securely
         </a>
       </section>

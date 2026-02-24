@@ -17,7 +17,9 @@ export default function RevealGate({ token }: RevealGateProps) {
   const [loading, setLoading] = useState(true);
   const [revealing, setRevealing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passphraseError, setPassphraseError] = useState<string | null>(null);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [revealedData, setRevealedData] = useState<RevealSecretResponse | null>(null);
   const pageLoadTime = useRef(Date.now());
 
   useEffect(() => {
@@ -48,6 +50,12 @@ export default function RevealGate({ token }: RevealGateProps) {
     fetchMetadata();
   }, [token]);
 
+  const isDecryptionError = (err: unknown): boolean => {
+    if (!(err instanceof Error)) return false;
+    const msg = err.message.toLowerCase();
+    return msg.includes("decrypt") || msg.includes("operation") || msg.includes("tag") || msg.includes("gcm");
+  };
+
   const handleReveal = async () => {
     if (!metadata) return;
 
@@ -68,8 +76,11 @@ export default function RevealGate({ token }: RevealGateProps) {
     }
 
     setRevealing(true);
+    setPassphraseError(null);
     try {
-      const revealed = await api.revealSecret(token, metadata.challenge_nonce);
+      // Only call reveal API if we don't have the data yet
+      const revealed = revealedData || await api.revealSecret(token, metadata.challenge_nonce);
+      if (!revealedData) setRevealedData(revealed);
 
       const keyFragment = window.location.hash.slice(1);
 
@@ -89,13 +100,18 @@ export default function RevealGate({ token }: RevealGateProps) {
 
       setDecryptedContent(plaintext);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to reveal secret";
-      if (msg.includes("expired") || msg.includes("Gone")) {
-        setError("This secret has expired or been deleted.");
-      } else if (msg.includes("Decryption") || msg.includes("operation")) {
-        setError("Failed to decrypt. Wrong passphrase or corrupted data.");
+      if (isDecryptionError(err) && metadata.has_passphrase) {
+        setPassphraseError("Wrong passphrase. Please try again.");
+        setPassphrase("");
       } else {
-        setError(msg);
+        const msg = err instanceof Error ? err.message : "Failed to reveal secret";
+        if (msg.includes("expired") || msg.includes("Gone")) {
+          setError("This secret has expired or been deleted.");
+        } else if (isDecryptionError(err)) {
+          setError("Failed to decrypt. The link may be corrupted.");
+        } else {
+          setError(msg);
+        }
       }
     } finally {
       setRevealing(false);
@@ -197,11 +213,19 @@ export default function RevealGate({ token }: RevealGateProps) {
               id="passphrase"
               type="password"
               value={passphrase}
-              onChange={(e) => setPassphrase(e.target.value)}
+              onChange={(e) => { setPassphrase(e.target.value); setPassphraseError(null); }}
               placeholder="Enter the passphrase shared with you"
-              className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className={`w-full rounded-lg border px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                passphraseError ? "border-destructive bg-destructive/5" : "border-border bg-background"
+              }`}
               onKeyDown={(e) => e.key === "Enter" && handleReveal()}
             />
+            {passphraseError && (
+              <p className="mt-2 text-sm text-destructive flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {passphraseError}
+              </p>
+            )}
           </div>
         )}
 

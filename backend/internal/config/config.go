@@ -18,8 +18,8 @@ type Config struct {
 
 	// S3 / MinIO
 	S3Endpoint  string `envconfig:"S3_ENDPOINT" default:"localhost:9000"`
-	S3AccessKey string `envconfig:"S3_ACCESS_KEY" default:"minioadmin"`
-	S3SecretKey string `envconfig:"S3_SECRET_KEY" default:"minioadmin"`
+	S3AccessKey string `envconfig:"S3_ACCESS_KEY" required:"true"`
+	S3SecretKey string `envconfig:"S3_SECRET_KEY" required:"true"`
 	S3Bucket    string `envconfig:"S3_BUCKET" default:"sharepwd"`
 	S3UseSSL    bool   `envconfig:"S3_USE_SSL" default:"false"`
 	S3Region    string `envconfig:"S3_REGION" default:"us-east-1"`

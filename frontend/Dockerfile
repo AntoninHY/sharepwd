@@ -6,6 +6,8 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 COPY . .
+ENV NEXT_PUBLIC_API_URL=https://sharepwd.io
+ENV NEXT_PUBLIC_APP_URL=https://sharepwd.io
 CMD ["npm", "run", "dev"]
 
 # Build stage
@@ -14,6 +16,8 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 COPY . .
+ENV NEXT_PUBLIC_API_URL=https://sharepwd.io
+ENV NEXT_PUBLIC_APP_URL=https://sharepwd.io
 RUN npm run build
 
 # Production stage

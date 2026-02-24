@@ -40,6 +40,8 @@ func NewFileHandler(
 }
 
 func (h *FileHandler) InitUpload(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 512*1024) // 512KB max for init upload metadata
+
 	var req model.InitFileUploadRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -126,6 +128,11 @@ func (h *FileHandler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if chunkN >= file.ChunkCount {
+		writeError(w, http.StatusBadRequest, "chunk number exceeds expected count")
+		return
+	}
+
 	if file.UploadComplete {
 		writeError(w, http.StatusConflict, "upload already complete")
 		return
@@ -202,6 +209,11 @@ func (h *FileHandler) DownloadChunk(w http.ResponseWriter, r *http.Request) {
 	file, err := h.fileRepo.GetByID(r.Context(), fileID)
 	if err != nil || file == nil || !file.UploadComplete {
 		writeError(w, http.StatusNotFound, "file not found")
+		return
+	}
+
+	if chunkN >= file.ChunkCount {
+		writeError(w, http.StatusBadRequest, "chunk number exceeds expected count")
 		return
 	}
 
