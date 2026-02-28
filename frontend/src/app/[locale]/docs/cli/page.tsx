@@ -22,27 +22,6 @@ export default async function CliDocsPage() {
       </div>
 
       <section className="mb-12">
-        <h2 className="text-xl font-semibold mb-4">{t("installation")}</h2>
-        <p className="text-muted-foreground mb-4">{t("installDesc")}</p>
-        <pre className="rounded-lg bg-muted px-4 py-3 text-xs overflow-x-auto">{`# Linux (amd64)
-wget https://github.com/jizo-ai/sharepwd/releases/latest/download/sharepwd-linux-amd64
-chmod +x sharepwd-linux-amd64
-sudo mv sharepwd-linux-amd64 /usr/local/bin/sharepwd
-
-# macOS (Apple Silicon)
-wget https://github.com/jizo-ai/sharepwd/releases/latest/download/sharepwd-darwin-arm64
-chmod +x sharepwd-darwin-arm64
-sudo mv sharepwd-darwin-arm64 /usr/local/bin/sharepwd
-
-# macOS (Intel)
-wget https://github.com/jizo-ai/sharepwd/releases/latest/download/sharepwd-darwin-amd64
-chmod +x sharepwd-darwin-amd64
-sudo mv sharepwd-darwin-amd64 /usr/local/bin/sharepwd`}</pre>
-        <p className="text-sm text-muted-foreground mt-4">{t("installVerify")}</p>
-        <pre className="rounded-lg bg-muted px-4 py-3 text-xs overflow-x-auto">sharepwd version</pre>
-      </section>
-
-      <section className="mb-12">
         <h2 className="text-xl font-semibold mb-4">{t("commands")}</h2>
 
         <div className="space-y-8">
