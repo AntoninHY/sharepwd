@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Eye, Lock, AlertTriangle, Copy, Clock, Flame } from "lucide-react";
 import { decryptText, decryptWithPassphrase } from "@/lib/crypto";
 import { api, type SecretMetadata, type RevealSecretResponse } from "@/lib/api";
@@ -11,6 +12,8 @@ interface RevealGateProps {
 }
 
 export default function RevealGate({ token }: RevealGateProps) {
+  const t = useTranslations("reveal");
+
   const [metadata, setMetadata] = useState<SecretMetadata | null>(null);
   const [decryptedContent, setDecryptedContent] = useState<string | null>(null);
   const [passphrase, setPassphrase] = useState("");
@@ -37,18 +40,18 @@ export default function RevealGate({ token }: RevealGateProps) {
       try {
         const meta = await api.getSecretMetadata(token);
         if (meta.is_expired) {
-          setError("This secret has expired or been deleted.");
+          setError(t("errorExpired"));
           return;
         }
         setMetadata(meta);
-      } catch (err) {
-        setError("Secret not found or has expired.");
+      } catch {
+        setError(t("errorNotFound"));
       } finally {
         setLoading(false);
       }
     }
     fetchMetadata();
-  }, [token]);
+  }, [token, t]);
 
   const isDecryptionError = (err: unknown): boolean => {
     if (!(err instanceof Error)) return false;
@@ -61,24 +64,23 @@ export default function RevealGate({ token }: RevealGateProps) {
 
     const timeOnPage = Date.now() - pageLoadTime.current;
     if (timeOnPage < 500) {
-      setError("Please wait a moment before revealing the secret.");
+      setError(t("errorWait"));
       return;
     }
 
     if (!hasInteracted) {
-      setError("Please move your mouse or interact with the page first.");
+      setError(t("errorInteract"));
       return;
     }
 
     if (metadata.has_passphrase && !passphrase) {
-      toast.error("Please enter the passphrase");
+      toast.error(t("toastPassphraseRequired"));
       return;
     }
 
     setRevealing(true);
     setPassphraseError(null);
     try {
-      // Only call reveal API if we don't have the data yet
       const revealed = revealedData || await api.revealSecret(token, metadata.challenge_nonce);
       if (!revealedData) setRevealedData(revealed);
 
@@ -101,16 +103,16 @@ export default function RevealGate({ token }: RevealGateProps) {
       setDecryptedContent(plaintext);
     } catch (err) {
       if (isDecryptionError(err) && metadata.has_passphrase) {
-        setPassphraseError("Wrong passphrase. Please try again.");
+        setPassphraseError(t("errorWrongPassphrase"));
         setPassphrase("");
       } else {
-        const msg = err instanceof Error ? err.message : "Failed to reveal secret";
+        const msg = err instanceof Error ? err.message : "";
         if (msg.includes("expired") || msg.includes("Gone")) {
-          setError("This secret has expired or been deleted.");
+          setError(t("errorExpired"));
         } else if (isDecryptionError(err)) {
-          setError("Failed to decrypt. The link may be corrupted.");
+          setError(t("errorDecrypt"));
         } else {
-          setError(msg);
+          setError(msg || t("errorDecrypt"));
         }
       }
     } finally {
@@ -121,13 +123,13 @@ export default function RevealGate({ token }: RevealGateProps) {
   const copyContent = async () => {
     if (!decryptedContent) return;
     await navigator.clipboard.writeText(decryptedContent);
-    toast.success("Copied to clipboard");
+    toast.success(t("toastCopied"));
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <div className="animate-pulse text-muted-foreground">{t("loading")}</div>
       </div>
     );
   }
@@ -137,7 +139,7 @@ export default function RevealGate({ token }: RevealGateProps) {
       <div className="max-w-lg mx-auto">
         <div className="rounded-xl border border-destructive/50 bg-card p-6 text-center">
           <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Secret Unavailable</h2>
+          <h2 className="text-lg font-semibold mb-2">{t("unavailableTitle")}</h2>
           <p className="text-sm text-muted-foreground">{error}</p>
         </div>
       </div>
@@ -150,12 +152,12 @@ export default function RevealGate({ token }: RevealGateProps) {
         <div className="rounded-xl border border-success/50 bg-card p-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Eye className="h-5 w-5 text-success" />
-            Secret Revealed
+            {t("revealedTitle")}
           </h2>
           {metadata?.burn_after_read && (
             <p className="text-sm text-warning mb-4 flex items-center gap-2">
               <Flame className="h-4 w-4" />
-              This secret has been destroyed and cannot be viewed again.
+              {t("burnWarning")}
             </p>
           )}
           <div className="relative">
@@ -180,26 +182,26 @@ export default function RevealGate({ token }: RevealGateProps) {
       <div className="rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
           <Lock className="h-5 w-5 text-primary" />
-          Someone shared a secret with you
+          {t("sharedTitle")}
         </h2>
 
         <div className="mt-4 space-y-3 text-sm text-muted-foreground">
           {metadata?.burn_after_read && (
             <p className="flex items-center gap-2 text-warning">
               <Flame className="h-4 w-4" />
-              This secret will be destroyed after viewing
+              {t("burnNotice")}
             </p>
           )}
           {metadata?.max_views && (
             <p className="flex items-center gap-2">
               <Eye className="h-4 w-4" />
-              {metadata.current_views} of {metadata.max_views} views used
+              {t("viewsUsed", { current: metadata.current_views, max: metadata.max_views })}
             </p>
           )}
           {metadata?.expires_at && (
             <p className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Expires: {new Date(metadata.expires_at).toLocaleString()}
+              {t("expires", { date: new Date(metadata.expires_at).toLocaleString() })}
             </p>
           )}
         </div>
@@ -207,14 +209,14 @@ export default function RevealGate({ token }: RevealGateProps) {
         {metadata?.has_passphrase && (
           <div className="mt-4">
             <label htmlFor="passphrase" className="block text-sm font-medium mb-2">
-              Enter Passphrase
+              {t("enterPassphrase")}
             </label>
             <input
               id="passphrase"
               type="password"
               value={passphrase}
               onChange={(e) => { setPassphrase(e.target.value); setPassphraseError(null); }}
-              placeholder="Enter the passphrase shared with you"
+              placeholder={t("passphrasePlaceholder")}
               className={`w-full rounded-lg border px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${
                 passphraseError ? "border-destructive bg-destructive/5" : "border-border bg-background"
               }`}
@@ -235,11 +237,11 @@ export default function RevealGate({ token }: RevealGateProps) {
           className="mt-6 w-full rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {revealing ? (
-            <span className="animate-pulse">Decrypting...</span>
+            <span className="animate-pulse">{t("decrypting")}</span>
           ) : (
             <>
               <Eye className="h-4 w-4" />
-              View Secret
+              {t("viewButton")}
             </>
           )}
         </button>
