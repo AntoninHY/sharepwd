@@ -6,7 +6,8 @@
   "nav": {
     "shareSecret": "Partager un secret",
     "apiDocs": "Documentation API",
-    "tagline": "Burn After Reading"
+    "tagline": "Burn After Reading",
+    "cliDocs": "CLI Docs"
   },
   "footer": {
     "builtBy": "Créé par",
@@ -183,5 +184,45 @@
   },
   "views": {
     "count": "{count, plural, one {# vue} other {# vues}}"
+  },
+  "cliDocs": {
+    "title": "Documentation CLI",
+    "selfHostNotice": "Le CLI nécessite un accès SSH au serveur exécutant SharePwd. Il n'est pas disponible sur sharepwd.io — il est conçu pour les instances auto-hébergées.",
+    "installation": "Installation",
+    "installDesc": "Téléchargez le binaire pré-compilé pour votre plateforme depuis les GitHub Releases :",
+    "installVerify": "Vérifiez l'installation :",
+    "commands": "Commandes",
+    "pushDesc": "Chiffrer et partager un secret",
+    "pullDesc": "Récupérer et déchiffrer un secret",
+    "deleteDesc": "Supprimer un secret avec son token créateur",
+    "versionDesc": "Afficher la version, le commit et la date de build",
+    "flags": "Options",
+    "flag": "Option",
+    "description": "Description",
+    "flagFile": "Chemin vers un fichier à chiffrer et partager",
+    "flagPassphrase": "Protéger avec une phrase secrète (saisie interactive)",
+    "flagPassphraseDecrypt": "Déchiffrer avec une phrase secrète (saisie interactive)",
+    "flagBurn": "Burn after reading (détruit après la première consultation)",
+    "flagTTL": "Durée de vie (ex : 5m, 1h, 24h, 7d)",
+    "flagMaxViews": "Nombre maximum de consultations (0 = illimité)",
+    "flagServer": "URL du serveur SharePwd (défaut : https://sharepwd.io)",
+    "flagJSON": "Sortie en JSON sur stdout",
+    "flagOutput": "Chemin du fichier de sortie (pour les secrets fichiers)",
+    "selfHost": "Instances auto-hébergées",
+    "selfHostDesc": "Pointez le CLI vers votre propre serveur SharePwd avec l'option --server :",
+    "exitCodes": "Codes de sortie",
+    "code": "Code",
+    "meaning": "Signification",
+    "exit0": "Succès",
+    "exit1": "Erreur d'usage (options ou arguments manquants)",
+    "exit2": "Erreur API (réseau, HTTP 4xx/5xx)",
+    "exit3": "Erreur crypto (échec de déchiffrement, mauvaise phrase secrète)",
+    "exit4": "Erreur d'entrée/sortie fichier",
+    "encryption": "Chiffrement",
+    "encryptionDesc": "Le CLI utilise exactement les mêmes primitives cryptographiques que le frontend web, garantissant une compatibilité totale.",
+    "encCompat": "Les secrets créés en CLI peuvent être déchiffrés dans le navigateur, et inversement",
+    "encAlgo": "Algorithme : AES-256-GCM (clé 256 bits, IV 96 bits, tag d'authentification 128 bits)",
+    "encKdf": "Dérivation de clé (phrase secrète) : PBKDF2 avec SHA-256, 600 000 itérations",
+    "encKeyless": "Sans phrase secrète : clé aléatoire intégrée dans le fragment URL (#), jamais envoyée au serveur"
   }
 }

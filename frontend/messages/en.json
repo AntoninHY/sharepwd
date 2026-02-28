@@ -6,7 +6,8 @@
   "nav": {
     "shareSecret": "Share a Secret",
     "apiDocs": "API Docs",
-    "tagline": "Burn After Reading"
+    "tagline": "Burn After Reading",
+    "cliDocs": "CLI Docs"
   },
   "footer": {
     "builtBy": "Built by",
@@ -183,5 +184,45 @@
   },
   "views": {
     "count": "{count, plural, one {# view} other {# views}}"
+  },
+  "cliDocs": {
+    "title": "CLI Documentation",
+    "selfHostNotice": "The CLI requires SSH access to the server running SharePwd. It is not available on sharepwd.io — it is designed for self-hosted instances.",
+    "installation": "Installation",
+    "installDesc": "Download the pre-built binary for your platform from GitHub Releases:",
+    "installVerify": "Verify the installation:",
+    "commands": "Commands",
+    "pushDesc": "Encrypt and share a secret",
+    "pullDesc": "Retrieve and decrypt a secret",
+    "deleteDesc": "Delete a secret using its creator token",
+    "versionDesc": "Show version, commit and build date",
+    "flags": "Flags",
+    "flag": "Flag",
+    "description": "Description",
+    "flagFile": "Path to a file to encrypt and share",
+    "flagPassphrase": "Protect with a passphrase (interactive prompt)",
+    "flagPassphraseDecrypt": "Decrypt with a passphrase (interactive prompt)",
+    "flagBurn": "Burn after reading (destroyed after first view)",
+    "flagTTL": "Time to live (e.g. 5m, 1h, 24h, 7d)",
+    "flagMaxViews": "Maximum number of views (0 = unlimited)",
+    "flagServer": "SharePwd server URL (default: https://sharepwd.io)",
+    "flagJSON": "Output as JSON on stdout",
+    "flagOutput": "Output file path (for file secrets)",
+    "selfHost": "Self-Hosted Instances",
+    "selfHostDesc": "Point the CLI to your own SharePwd server using the --server flag:",
+    "exitCodes": "Exit Codes",
+    "code": "Code",
+    "meaning": "Meaning",
+    "exit0": "Success",
+    "exit1": "Usage error (missing flags or arguments)",
+    "exit2": "API error (network, HTTP 4xx/5xx)",
+    "exit3": "Crypto error (decryption failure, wrong passphrase)",
+    "exit4": "File I/O error",
+    "encryption": "Encryption",
+    "encryptionDesc": "The CLI uses the exact same cryptographic primitives as the web frontend, ensuring full cross-compatibility.",
+    "encCompat": "Secrets created in the CLI can be decrypted in the browser, and vice versa",
+    "encAlgo": "Algorithm: AES-256-GCM (256-bit key, 96-bit IV, 128-bit auth tag)",
+    "encKdf": "Key derivation (passphrase): PBKDF2 with SHA-256, 600,000 iterations",
+    "encKeyless": "Without passphrase: random key embedded in URL fragment (#), never sent to server"
   }
 }
