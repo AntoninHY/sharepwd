@@ -1,6 +1,6 @@
 # Binaries
-server
-cli
+/server
+/cli
 *.exe
 *.dll
 *.so
