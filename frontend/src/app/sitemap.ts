@@ -1,24 +1,17 @@
 import type { MetadataRoute } from "next";
 
+const SITE_URL = "https://sharepwd.io";
+const locales = ["en", "fr"];
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    {
-      url: "https://sharepwd.io",
+  const pages = ["", "/create", "/docs"];
+
+  return pages.flatMap((page) =>
+    locales.map((locale) => ({
+      url: `${SITE_URL}/${locale}${page}`,
       lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 1,
-    },
-    {
-      url: "https://sharepwd.io/create",
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: "https://sharepwd.io/docs",
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-  ];
+      changeFrequency: "monthly" as const,
+      priority: page === "" ? 1 : page === "/create" ? 0.9 : 0.7,
+    }))
+  );
 }

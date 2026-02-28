@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Lock, Eye, Clock, Flame, Copy, ExternalLink } from "lucide-react";
 import { encryptText, encryptWithPassphrase } from "@/lib/crypto";
 import { api } from "@/lib/api";
@@ -10,6 +11,10 @@ import { EXPIRATION_OPTIONS, VIEW_OPTIONS } from "@/lib/types";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export default function CreateForm() {
+  const t = useTranslations("createForm");
+  const tExp = useTranslations("expiration");
+  const tViews = useTranslations("views");
+
   const [content, setContent] = useState("");
   const [passphrase, setPassphrase] = useState("");
   const [expiresIn, setExpiresIn] = useState("24h");
@@ -22,7 +27,7 @@ export default function CreateForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) {
-      toast.error("Please enter some content to share");
+      toast.error(t("emptyError"));
       return;
     }
 
@@ -61,9 +66,9 @@ export default function CreateForm() {
 
       setShareUrl(url);
       setCreatorToken(response.creator_token);
-      toast.success("Secret created successfully");
+      toast.success(t("toastSuccess"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create secret");
+      toast.error(err instanceof Error ? err.message : t("toastError"));
     } finally {
       setLoading(false);
     }
@@ -72,7 +77,7 @@ export default function CreateForm() {
   const copyUrl = async () => {
     if (!shareUrl) return;
     await navigator.clipboard.writeText(shareUrl);
-    toast.success("Link copied to clipboard");
+    toast.success(t("toastCopied"));
   };
 
   if (shareUrl) {
@@ -81,10 +86,10 @@ export default function CreateForm() {
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Lock className="h-5 w-5 text-success" />
-            Secret Created
+            {t("successTitle")}
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Share this link with the recipient. {passphrase ? "They will need the passphrase to decrypt it." : "The encryption key is embedded in the URL fragment."}
+            {passphrase ? t("successDescPassphrase") : t("successDescLink")}
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 rounded-lg bg-muted px-4 py-3 text-sm break-all font-mono">
@@ -99,9 +104,7 @@ export default function CreateForm() {
             </button>
           </div>
           {passphrase && (
-            <p className="mt-4 text-sm text-warning">
-              Remember to share the passphrase via a separate channel.
-            </p>
+            <p className="mt-4 text-sm text-warning">{t("passphraseWarning")}</p>
           )}
           <div className="mt-6 flex gap-3">
             <button
@@ -113,7 +116,7 @@ export default function CreateForm() {
               }}
               className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted transition-colors"
             >
-              Create Another
+              {t("createAnother")}
             </button>
           </div>
         </div>
@@ -125,38 +128,36 @@ export default function CreateForm() {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label htmlFor="content" className="block text-sm font-medium mb-2">
-          Secret Content
+          {t("contentLabel")}
         </label>
         <textarea
           id="content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Paste your password, API key, or any secret here..."
+          placeholder={t("contentPlaceholder")}
           className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm font-mono min-h-[160px] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y"
           maxLength={100_000}
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          {content.length.toLocaleString()} / 100,000 characters
+          {t("charCount", { count: content.length, max: 100000 })}
         </p>
       </div>
 
       <div>
         <label htmlFor="passphrase" className="block text-sm font-medium mb-2 flex items-center gap-2">
           <Lock className="h-4 w-4" />
-          Passphrase (optional)
+          {t("passphraseLabel")}
         </label>
         <input
           id="passphrase"
           type="password"
           value={passphrase}
           onChange={(e) => setPassphrase(e.target.value)}
-          placeholder="Additional passphrase for extra security"
+          placeholder={t("passphrasePlaceholder")}
           className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          {passphrase
-            ? "The recipient will need this passphrase. Share it via a separate channel."
-            : "Without a passphrase, the encryption key is in the URL. Anyone with the link can decrypt."}
+          {passphrase ? t("passphraseHintSet") : t("passphraseHintNone")}
         </p>
       </div>
 
@@ -164,7 +165,7 @@ export default function CreateForm() {
         <div>
           <label htmlFor="expires" className="block text-sm font-medium mb-2 flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Expires After
+            {t("expiresLabel")}
           </label>
           <select
             id="expires"
@@ -174,7 +175,7 @@ export default function CreateForm() {
           >
             {EXPIRATION_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {tExp(opt.value)}
               </option>
             ))}
           </select>
@@ -183,7 +184,7 @@ export default function CreateForm() {
         <div>
           <label htmlFor="maxViews" className="block text-sm font-medium mb-2 flex items-center gap-2">
             <Eye className="h-4 w-4" />
-            Max Views
+            {t("maxViewsLabel")}
           </label>
           <select
             id="maxViews"
@@ -191,10 +192,10 @@ export default function CreateForm() {
             onChange={(e) => setMaxViews(e.target.value ? Number(e.target.value) : undefined)}
             className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
-            <option value="">Unlimited</option>
+            <option value="">{t("unlimited")}</option>
             {VIEW_OPTIONS.map((n) => (
               <option key={n} value={n}>
-                {n} view{n > 1 ? "s" : ""}
+                {tViews("count", { count: n })}
               </option>
             ))}
           </select>
@@ -210,7 +211,7 @@ export default function CreateForm() {
         />
         <span className="text-sm flex items-center gap-2">
           <Flame className="h-4 w-4 text-destructive" />
-          Burn after reading (destroyed after first view)
+          {t("burnLabel")}
         </span>
       </label>
 
@@ -220,11 +221,11 @@ export default function CreateForm() {
         className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
-          <span className="animate-pulse">Encrypting...</span>
+          <span className="animate-pulse">{t("submitting")}</span>
         ) : (
           <>
             <Lock className="h-4 w-4" />
-            Encrypt & Share
+            {t("submitButton")}
           </>
         )}
       </button>
