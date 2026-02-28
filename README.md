@@ -22,7 +22,7 @@ Most "secret sharing" tools decrypt on the server. SharePwd encrypts and decrypt
 
 ```
 ┌──────────────┐     HTTPS     ┌─────────┐     ┌──────────┐
-│   Browser    │◄──────────────►│  Nginx  │────►│ Frontend │  Next.js 15
+│   Browser    │◄─────────────►│  Nginx  │────►│ Frontend │  Next.js 15
 │ (encryption) │               │  (TLS)  │     └──────────┘
 └──────────────┘               │         │     ┌──────────┐
                                │         │────►│ Backend  │  Go 1.24
@@ -30,10 +30,10 @@ Most "secret sharing" tools decrypt on the server. SharePwd encrypts and decrypt
                                                     │
                                           ┌─────────┴─────────┐
                                           │                   │
-                                     ┌────▼────┐       ┌─────▼─────┐
+                                     ┌────▼─────┐       ┌─────▼─────┐
                                      │PostgreSQL│       │   MinIO   │
                                      │   16     │       │  (S3)     │
-                                     └─────────┘       └───────────┘
+                                     └──────────┘       └───────────┘
 ```
 
 **6 containers**: Nginx (reverse proxy + TLS), Frontend (Next.js 15 / React 19), Backend (Go / Chi), PostgreSQL 16, MinIO (S3-compatible file storage), Umami (privacy-focused analytics).
