@@ -157,6 +157,9 @@ export default async function LocaleLayout({
                 <Link href="/docs" className="hover:text-foreground transition-colors">
                   {t("apiDocs")}
                 </Link>
+                <Link href="/docs/cli" className="hover:text-foreground transition-colors">
+                  {t("cliDocs")}
+                </Link>
                 <LanguageSwitcher />
               </nav>
             </div>
@@ -176,6 +179,9 @@ export default async function LocaleLayout({
                 </Link>
                 <Link href="/docs" className="hover:text-foreground transition-colors">
                   {t("apiDocs")}
+                </Link>
+                <Link href="/docs/cli" className="hover:text-foreground transition-colors">
+                  {t("cliDocs")}
                 </Link>
               </nav>
               <span>
