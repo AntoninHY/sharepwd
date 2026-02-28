@@ -35,3 +35,6 @@ vendor/
 # Data
 /data/
 node_modules/
+
+# CLI binaries
+cli/bin/
