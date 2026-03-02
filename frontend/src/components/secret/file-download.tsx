@@ -6,6 +6,9 @@ import { useTranslations } from "next-intl";
 import { Download, Lock, AlertTriangle, Clock, Flame, Eye } from "lucide-react";
 import { decryptText, decryptWithPassphrase, fromBase64 } from "@/lib/crypto";
 import { api, type SecretMetadata, type RevealSecretResponse } from "@/lib/api";
+import { solvePoW, type PowResult } from "@/lib/pow";
+import { BehavioralCollector } from "@/lib/behavioral";
+import { collectEnvFingerprint } from "@/lib/env-fingerprint";
 
 interface FileDownloadProps {
   token: string;
@@ -20,20 +23,21 @@ export default function FileDownload({ token }: FileDownloadProps) {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passphraseError, setPassphraseError] = useState<string | null>(null);
-  const [hasInteracted, setHasInteracted] = useState(false);
   const [revealedData, setRevealedData] = useState<RevealSecretResponse | null>(null);
-  const pageLoadTime = useRef(Date.now());
 
+  const powResultRef = useRef<PowResult | null>(null);
+  const powAbortRef = useRef<(() => void) | null>(null);
+  const behavioralRef = useRef<BehavioralCollector | null>(null);
+
+  // Start behavioral collector on mount
   useEffect(() => {
-    const handler = () => setHasInteracted(true);
-    window.addEventListener("pointermove", handler, { once: true });
-    window.addEventListener("pointerdown", handler, { once: true });
-    return () => {
-      window.removeEventListener("pointermove", handler);
-      window.removeEventListener("pointerdown", handler);
-    };
+    const collector = new BehavioralCollector();
+    collector.start();
+    behavioralRef.current = collector;
+    return () => collector.stop();
   }, []);
 
+  // Fetch metadata and start PoW solver
   useEffect(() => {
     async function fetchMetadata() {
       try {
@@ -43,6 +47,14 @@ export default function FileDownload({ token }: FileDownloadProps) {
           return;
         }
         setMetadata(meta);
+
+        if (meta.pow_challenge && meta.pow_difficulty) {
+          const { promise, abort } = solvePoW(meta.pow_challenge, meta.pow_difficulty);
+          powAbortRef.current = abort;
+          promise.then((result) => {
+            powResultRef.current = result;
+          }).catch(() => {});
+        }
       } catch {
         setError(t("errorNotFound"));
       } finally {
@@ -50,6 +62,10 @@ export default function FileDownload({ token }: FileDownloadProps) {
       }
     }
     fetchMetadata();
+
+    return () => {
+      powAbortRef.current?.();
+    };
   }, [token, t]);
 
   const isDecryptionError = (err: unknown): boolean => {
@@ -61,12 +77,6 @@ export default function FileDownload({ token }: FileDownloadProps) {
   const handleDownload = async () => {
     if (!metadata) return;
 
-    const timeOnPage = Date.now() - pageLoadTime.current;
-    if (timeOnPage < 500 || !hasInteracted) {
-      setError(t("errorWait"));
-      return;
-    }
-
     if (metadata.has_passphrase && !passphrase) {
       toast.error(t("toastPassphraseRequired"));
       return;
@@ -75,7 +85,17 @@ export default function FileDownload({ token }: FileDownloadProps) {
     setDownloading(true);
     setPassphraseError(null);
     try {
-      const revealed = revealedData || await api.revealSecret(token, metadata.challenge_nonce);
+      const powSolution = powResultRef.current?.counter;
+      const behavioralProof = behavioralRef.current?.generateProof();
+      const envFp = collectEnvFingerprint();
+
+      const revealed = revealedData || await api.revealSecret(
+        token,
+        metadata.challenge_nonce,
+        powSolution,
+        behavioralProof,
+        envFp,
+      );
       if (!revealedData) setRevealedData(revealed);
 
       const keyFragment = window.location.hash.slice(1);

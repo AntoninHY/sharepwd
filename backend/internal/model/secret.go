@@ -57,7 +57,10 @@ type SecretMetadata struct {
 }
 
 type RevealSecretRequest struct {
-	ChallengeNonce string `json:"challenge_nonce"`
+	ChallengeNonce  string `json:"challenge_nonce"`
+	PowSolution     uint64 `json:"pow_solution,omitempty"`
+	BehavioralProof string `json:"behavioral_proof,omitempty"`
+	EnvFingerprint  string `json:"env_fingerprint,omitempty"`
 }
 
 type RevealSecretResponse struct {

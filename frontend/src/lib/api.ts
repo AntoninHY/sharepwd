@@ -11,6 +11,8 @@ export interface SecretMetadata {
   is_expired: boolean;
   created_at: string;
   challenge_nonce: string;
+  pow_challenge: string;
+  pow_difficulty: number;
 }
 
 export interface CreateSecretPayload {
@@ -72,10 +74,21 @@ export const api = {
     return request(`/v1/secrets/${token}`);
   },
 
-  revealSecret(token: string, challengeNonce: string): Promise<RevealSecretResponse> {
+  revealSecret(
+    token: string,
+    challengeNonce: string,
+    powSolution?: number,
+    behavioralProof?: string,
+    envFingerprint?: string,
+  ): Promise<RevealSecretResponse> {
     return request(`/v1/secrets/${token}/reveal`, {
       method: "POST",
-      body: JSON.stringify({ challenge_nonce: challengeNonce }),
+      body: JSON.stringify({
+        challenge_nonce: challengeNonce,
+        ...(powSolution && { pow_solution: powSolution }),
+        ...(behavioralProof && { behavioral_proof: behavioralProof }),
+        ...(envFingerprint && { env_fingerprint: envFingerprint }),
+      }),
     });
   },
 

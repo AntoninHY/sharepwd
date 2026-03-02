@@ -20,7 +20,7 @@ type CreateSecretResponse struct {
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 }
 
-// SecretMetadata mirrors the backend metadata + challenge nonce.
+// SecretMetadata mirrors the backend metadata + challenge nonce + PoW.
 type SecretMetadata struct {
 	AccessToken    string  `json:"access_token"`
 	HasPassphrase  bool    `json:"has_passphrase"`
@@ -32,11 +32,14 @@ type SecretMetadata struct {
 	IsExpired      bool    `json:"is_expired"`
 	CreatedAt      string  `json:"created_at"`
 	ChallengeNonce string  `json:"challenge_nonce"`
+	PowChallenge   string  `json:"pow_challenge"`
+	PowDifficulty  uint8   `json:"pow_difficulty"`
 }
 
 // RevealSecretRequest is sent to POST /v1/secrets/{token}/reveal.
 type RevealSecretRequest struct {
 	ChallengeNonce string `json:"challenge_nonce"`
+	PowSolution    uint64 `json:"pow_solution,omitempty"`
 }
 
 // RevealSecretResponse contains the encrypted payload.

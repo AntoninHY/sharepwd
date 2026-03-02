@@ -40,13 +40,37 @@ Most "secret sharing" tools decrypt on the server. SharePwd encrypts and decrypt
 
 ## Security Model
 
+### Zero-Knowledge Encryption
+
 - **AES-256-GCM** encryption/decryption happens exclusively in the browser
 - **PBKDF2** with 600,000 iterations for passphrase-based key derivation (SHA-256)
 - Encryption key is stored in the **URL fragment** (`#key`) — never sent to the server
 - Optional **passphrase** for additional protection (key derived from passphrase instead of URL)
-- **Challenge-nonce** system prevents replay attacks on secret reveal
-- **Bot detection** blocks link previews (Slack, Teams, Discord, WhatsApp, etc.) from consuming views
-- **Rate limiting** (30 req/min per IP)
+
+### 5-Layer Anti-Bot Defense
+
+SharePwd uses 5 composable defense layers to make automated scraping of secrets economically impractical, without degrading user experience:
+
+| Layer | Mechanism | Purpose |
+|-------|-----------|---------|
+| **1. Grace Period** | Server-enforced minimum time (1.5s) between nonce issuance and reveal | Prevents instant automated reveals |
+| **2. Proof-of-Work** | SHA-256 hashcash (configurable difficulty) solved in a Web Worker | Forces computational cost per reveal — invisible to users |
+| **3. Hardened Nonces** | Single-use, IP-bound, per-IP limit (3 active), 5-minute TTL | Prevents nonce farming and replay attacks |
+| **4. Behavioral Analysis** | Passive mouse movement entropy, velocity variance, straight-line ratio scoring | Detects automated interactions without CAPTCHAs |
+| **5. Environment Fingerprint** | Detects `navigator.webdriver`, missing plugins, zero-size screens, etc. | Blocks headless browsers (Puppeteer, Playwright) |
+
+All layers are validated server-side. Bypassing one layer is possible — bypassing all five simultaneously at scale is not.
+
+**Rollout modes:**
+- `DEFENSE_STRICT_MODE=false` (default) — all layers active but missing proofs are logged, not blocked. Safe for gradual deployment.
+- `DEFENSE_STRICT_MODE=true` — all proofs required. Requests without PoW, behavioral proof, or env fingerprint are rejected with 403.
+
+**API key holders** (CLI, programmatic access) skip layers 4 and 5 automatically.
+
+### Infrastructure Security
+
+- **Bot detection** blocks link previews (Slack, Teams, Discord, WhatsApp, 40+ patterns) and empty User-Agents
+- **Rate limiting** — 30 req/min per IP globally, 10 req/min on metadata endpoint
 - Non-root containers, security headers (HSTS, CSP, X-Frame-Options DENY)
 
 ## Features
@@ -159,13 +183,14 @@ curl -X POST https://sharepwd.io/v1/secrets \
 # Response
 # {"access_token":"abc123","creator_token":"def456","expires_at":"..."}
 
-# Get metadata + challenge nonce
+# Get metadata + challenge nonce + PoW challenge
 curl https://sharepwd.io/v1/secrets/abc123
+# Response includes: challenge_nonce, pow_challenge, pow_difficulty
 
-# Reveal (submit the challenge nonce)
+# Reveal (submit challenge nonce + PoW solution + proofs)
 curl -X POST https://sharepwd.io/v1/secrets/abc123/reveal \
   -H "Content-Type: application/json" \
-  -d '{"challenge_nonce":"..."}'
+  -d '{"challenge_nonce":"...","pow_solution":12345}'
 
 # Response
 # {"encrypted_data":"...","iv":"..."}
@@ -198,6 +223,14 @@ All configuration is done through environment variables. See [`deploy/.env.examp
 | `CLEANUP_INTERVAL` | Expired secrets cleanup interval | `60s` |
 | `RATE_LIMIT_PUBLIC` | Requests per minute per IP | `30` |
 | `STORAGE_BACKEND` | File storage: `s3` or `local` | `s3` |
+| `DEFENSE_STRICT_MODE` | Enforce all defense layers (reject if missing) | `false` |
+| `POW_DIFFICULTY` | Proof-of-Work difficulty (leading zero bits) | `20` |
+| `CHALLENGE_MIN_SOLVE_TIME` | Minimum time between nonce issuance and reveal | `1500ms` |
+| `CHALLENGE_TTL` | Nonce time-to-live | `5m` |
+| `MAX_NONCES_PER_IP` | Max active nonces per IP address | `3` |
+| `METADATA_RATE_LIMIT` | Requests per minute on metadata endpoint | `10` |
+| `BEHAVIORAL_MIN_SCORE` | Minimum behavioral score to pass (0-100) | `30` |
+| `ENV_MIN_SCORE` | Minimum environment fingerprint score (0-50) | `20` |
 
 ## License
 

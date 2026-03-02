@@ -100,7 +100,8 @@ func TestClientRevealSecret(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "test")
-	resp, err := client.RevealSecret("my-token", "nonce123")
+	meta := &SecretMetadata{ChallengeNonce: "nonce123"}
+	resp, err := client.RevealSecret("my-token", meta)
 	if err != nil {
 		t.Fatalf("RevealSecret: %v", err)
 	}
