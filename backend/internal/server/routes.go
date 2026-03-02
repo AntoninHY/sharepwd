@@ -42,7 +42,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) *chi.Mux {
 
 	// Handlers
 	healthH := handler.NewHealthHandler()
-	secretH := handler.NewSecretHandler(secretSvc)
+	secretH := handler.NewSecretHandler(secretSvc, cfg)
 	apiKeyH := handler.NewAPIKeyHandler(apiKeyRepo)
 	fileH := handler.NewFileHandler(secretSvc, fileRepo, store, cfg)
 
@@ -58,7 +58,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) *chi.Mux {
 
 		// Public secret routes
 		r.Post("/secrets", secretH.Create)
-		r.With(middleware.BotDetect).Get("/secrets/{token}", secretH.GetMetadata)
+		r.With(middleware.BotDetect, middleware.RateLimit(cfg.MetadataRateLimit)).Get("/secrets/{token}", secretH.GetMetadata)
 		r.With(middleware.BotDetect).Post("/secrets/{token}/reveal", secretH.Reveal)
 		r.Delete("/secrets/{token}", secretH.Delete)
 

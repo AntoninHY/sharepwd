@@ -30,6 +30,16 @@ type Config struct {
 
 	// Rate limiting
 	RateLimitPublic int `envconfig:"RATE_LIMIT_PUBLIC" default:"30"`
+
+	// Anti-bot defense layers
+	ChallengeMinSolveTime time.Duration `envconfig:"CHALLENGE_MIN_SOLVE_TIME" default:"1500ms"`
+	ChallengeTTL          time.Duration `envconfig:"CHALLENGE_TTL" default:"5m"`
+	PowDifficulty         uint8         `envconfig:"POW_DIFFICULTY" default:"20"`
+	BehavioralMinScore    int           `envconfig:"BEHAVIORAL_MIN_SCORE" default:"30"`
+	EnvMinScore           int           `envconfig:"ENV_MIN_SCORE" default:"20"`
+	MaxNoncesPerIP        int           `envconfig:"MAX_NONCES_PER_IP" default:"3"`
+	MetadataRateLimit     int           `envconfig:"METADATA_RATE_LIMIT" default:"10"`
+	DefenseStrictMode     bool          `envconfig:"DEFENSE_STRICT_MODE" default:"false"`
 }
 
 func Load() (*Config, error) {

@@ -316,8 +316,8 @@ func cmdPull(args []string) {
 		}
 	}
 
-	status("Revealing secret...")
-	revealed, err := client.RevealSecret(parsed.Token, meta.ChallengeNonce)
+	status("Solving challenge & revealing secret...")
+	revealed, err := client.RevealSecret(parsed.Token, meta)
 	if err != nil {
 		errMsg("API error: %v", err)
 		os.Exit(exitAPI)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -83,9 +84,46 @@ func (c *Client) GetMetadata(token string) (*SecretMetadata, error) {
 	return &result, nil
 }
 
+// solvePoW finds a counter such that SHA-256(prefix + ":" + counter) has N leading zero bits.
+func solvePoW(prefix string, difficulty uint8) uint64 {
+	for counter := uint64(1); ; counter++ {
+		input := fmt.Sprintf("%s:%d", prefix, counter)
+		hash := sha256.Sum256([]byte(input))
+		if hasLeadingZeroBits(hash[:], difficulty) {
+			return counter
+		}
+	}
+}
+
+func hasLeadingZeroBits(hash []byte, bits uint8) bool {
+	fullBytes := bits / 8
+	remaining := bits % 8
+
+	for i := uint8(0); i < fullBytes; i++ {
+		if hash[i] != 0 {
+			return false
+		}
+	}
+	if remaining > 0 {
+		mask := byte(0xFF << (8 - remaining))
+		if hash[fullBytes]&mask != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // RevealSecret sends a POST /v1/secrets/{token}/reveal request.
-func (c *Client) RevealSecret(token, challengeNonce string) (*RevealSecretResponse, error) {
-	body, err := json.Marshal(RevealSecretRequest{ChallengeNonce: challengeNonce})
+// It solves the PoW challenge between GetMetadata and Reveal.
+func (c *Client) RevealSecret(token string, meta *SecretMetadata) (*RevealSecretResponse, error) {
+	req := RevealSecretRequest{ChallengeNonce: meta.ChallengeNonce}
+
+	// Solve Proof-of-Work if challenge is present
+	if meta.PowChallenge != "" && meta.PowDifficulty > 0 {
+		req.PowSolution = solvePoW(meta.PowChallenge, meta.PowDifficulty)
+	}
+
+	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}

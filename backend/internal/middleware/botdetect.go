@@ -51,7 +51,13 @@ func BotDetect(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ua := r.UserAgent()
 		if ua == "" {
-			next.ServeHTTP(w, r)
+			slog.Info("empty user agent blocked",
+				"path", r.URL.Path,
+				"ip", r.RemoteAddr,
+			)
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(botDummyPage))
 			return
 		}
 
