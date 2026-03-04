@@ -42,7 +42,7 @@ CREATE INDEX idx_files_secret_id ON files(secret_id);
 
 CREATE TABLE api_keys (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    key_prefix      VARCHAR(8) NOT NULL,
+    key_prefix      VARCHAR(12) NOT NULL,
     key_hash        VARCHAR(128) NOT NULL UNIQUE,
     name            VARCHAR(255) NOT NULL,
     rate_limit      INTEGER NOT NULL DEFAULT 60,
