@@ -178,6 +178,85 @@ func (c *Client) DeleteSecret(token, creatorToken string) error {
 	return nil
 }
 
+// AdminCreateAPIKey sends a POST /v1/admin/api-keys request.
+func (c *Client) AdminCreateAPIKey(adminSecret string, req *AdminCreateAPIKeyRequest) (*AdminCreateAPIKeyResponse, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequest(http.MethodPost, c.baseURL+"/v1/admin/api-keys", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("User-Agent", c.userAgent)
+	httpReq.Header.Set("X-Admin-Secret", adminSecret)
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, c.readError(resp)
+	}
+
+	var result AdminCreateAPIKeyResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+	return &result, nil
+}
+
+// ListAPIKeys sends a GET /v1/api-keys request.
+func (c *Client) ListAPIKeys(apiKey string) ([]APIKeyInfo, error) {
+	httpReq, err := http.NewRequest(http.MethodGet, c.baseURL+"/v1/api-keys", nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("User-Agent", c.userAgent)
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.readError(resp)
+	}
+
+	var result []APIKeyInfo
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+	return result, nil
+}
+
+// RevokeAPIKey sends a DELETE /v1/api-keys/{id} request.
+func (c *Client) RevokeAPIKey(apiKey, id string) error {
+	httpReq, err := http.NewRequest(http.MethodDelete, c.baseURL+"/v1/api-keys/"+id, nil)
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("User-Agent", c.userAgent)
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return c.readError(resp)
+	}
+	return nil
+}
+
 // readError extracts a meaningful error from an HTTP response.
 func (c *Client) readError(resp *http.Response) error {
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
