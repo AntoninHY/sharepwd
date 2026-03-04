@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jizo-hr/sharepwd/internal/config"
-	"github.com/jizo-hr/sharepwd/internal/model"
-	"github.com/jizo-hr/sharepwd/internal/repository"
+	"github.com/AntoninHY/sharepwd/internal/config"
+	"github.com/AntoninHY/sharepwd/internal/model"
+	"github.com/AntoninHY/sharepwd/internal/repository"
 )
 
 type SecretService struct {

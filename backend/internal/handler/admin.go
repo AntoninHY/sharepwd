@@ -9,8 +9,8 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/jizo-hr/sharepwd/internal/model"
-	"github.com/jizo-hr/sharepwd/internal/repository"
+	"github.com/AntoninHY/sharepwd/internal/model"
+	"github.com/AntoninHY/sharepwd/internal/repository"
 )
 
 // AdminHandler exposes admin-only endpoints for managing API keys.
