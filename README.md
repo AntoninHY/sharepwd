@@ -109,8 +109,11 @@ Edit `deploy/.env` and set **strong, unique passwords** for:
 - `MINIO_ROOT_PASSWORD`
 - `UMAMI_DB_PASSWORD`
 - `UMAMI_APP_SECRET`
+- `ADMIN_SECRET` — generate with `openssl rand -base64 48`
 
 Update `BASE_URL`, `CORS_ORIGINS`, `NEXT_PUBLIC_API_URL`, and `NEXT_PUBLIC_APP_URL` to match your domain.
+
+> **Full deployment guide**: [`docs/installation.md`](docs/installation.md) — TLS setup, troubleshooting, and more.
 
 ### 3. TLS Certificates
 
@@ -171,6 +174,10 @@ Full API documentation is available at `/docs` on any running instance.
 | `POST` | `/v1/files/:id/complete` | Finalize file upload |
 | `GET` | `/v1/files/:id/chunks/:index` | Download a file chunk |
 | `GET` | `/v1/health` | Health check |
+| `POST` | `/v1/admin/api-keys` | Create API key (admin bootstrap) |
+| `POST` | `/v1/api-keys` | Create API key (requires API key) |
+| `GET` | `/v1/api-keys` | List API keys |
+| `DELETE` | `/v1/api-keys/:id` | Revoke an API key |
 
 ### Example: Create and reveal a secret
 
@@ -229,6 +236,7 @@ All configuration is done through environment variables. See [`deploy/.env.examp
 | `CHALLENGE_TTL` | Nonce time-to-live | `5m` |
 | `MAX_NONCES_PER_IP` | Max active nonces per IP address | `3` |
 | `METADATA_RATE_LIMIT` | Requests per minute on metadata endpoint | `10` |
+| `ADMIN_SECRET` | Admin secret for API key bootstrapping ([details](docs/api-keys.md)) | — (optional) |
 | `BEHAVIORAL_MIN_SCORE` | Minimum behavioral score to pass (0-100) | `30` |
 | `ENV_MIN_SCORE` | Minimum environment fingerprint score (0-50) | `20` |
 
