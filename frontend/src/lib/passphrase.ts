@@ -1,3 +1,7 @@
+// SharePwd.io — Burn After Reading
+// Zero-knowledge secret sharing. Client-side AES-256-GCM encryption, secrets self-destruct after viewing.
+// Copyright (c) 2025-2026 Antonin HILY — CTO, Jizo AI
+
 // EFF Short Wordlist 1 (~1296 words, ~10.3 bits/word)
 // https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases
 const WORDLIST = [
