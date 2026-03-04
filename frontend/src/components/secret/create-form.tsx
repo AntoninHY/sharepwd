@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { Lock, Eye, Clock, Flame, Copy, ExternalLink } from "lucide-react";
+import { Lock, Eye, EyeOff, Clock, Flame, Copy, ExternalLink } from "lucide-react";
+import PassphraseGenerator from "@/components/ui/passphrase-generator";
 import { encryptText, encryptWithPassphrase } from "@/lib/crypto";
 import { api } from "@/lib/api";
 import { EXPIRATION_OPTIONS, VIEW_OPTIONS } from "@/lib/types";
@@ -20,6 +21,7 @@ export default function CreateForm() {
   const [expiresIn, setExpiresIn] = useState("24h");
   const [maxViews, setMaxViews] = useState<number | undefined>(undefined);
   const [burnAfterRead, setBurnAfterRead] = useState(false);
+  const [showPassphrase, setShowPassphrase] = useState(false);
   const [loading, setLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [creatorToken, setCreatorToken] = useState<string | null>(null);
@@ -148,13 +150,30 @@ export default function CreateForm() {
           <Lock className="h-4 w-4" />
           {t("passphraseLabel")}
         </label>
-        <input
-          id="passphrase"
-          type="password"
-          value={passphrase}
-          onChange={(e) => setPassphrase(e.target.value)}
-          placeholder={t("passphrasePlaceholder")}
-          className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+        <div className="relative">
+          <input
+            id="passphrase"
+            type={showPassphrase ? "text" : "password"}
+            value={passphrase}
+            onChange={(e) => setPassphrase(e.target.value)}
+            placeholder={t("passphrasePlaceholder")}
+            className="w-full rounded-lg border border-border bg-card px-4 py-3 pr-10 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassphrase(!showPassphrase)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            title={t(showPassphrase ? "hidePassphrase" : "showPassphrase")}
+          >
+            {showPassphrase ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        <PassphraseGenerator
+          translationNamespace="createForm"
+          onGenerate={(value) => {
+            setPassphrase(value);
+            setShowPassphrase(true);
+          }}
         />
         <p className="mt-1 text-xs text-muted-foreground">
           {passphrase ? t("passphraseHintSet") : t("passphraseHintNone")}
