@@ -22,29 +22,40 @@ cd sharepwd
 cp deploy/.env.example deploy/.env
 ```
 
-Edit `deploy/.env` and set **strong, unique values** for:
+Open `deploy/.env` in your editor. You need to set every value marked below.
 
-| Variable | Purpose |
-|----------|---------|
-| `POSTGRES_PASSWORD` | PostgreSQL database password |
-| `MINIO_ROOT_PASSWORD` | MinIO (S3) admin password |
-| `UMAMI_DB_PASSWORD` | Umami analytics database password |
-| `UMAMI_APP_SECRET` | Umami session secret |
-| `ADMIN_SECRET` | Admin secret for API key management |
+### Passwords and secrets
 
-Generate secure values:
+Generate a unique random value for each variable and paste it into `.env`:
 
 ```bash
-# Generate a random password (use a different one for each variable)
+# Run this once per variable — copy each output into .env
 openssl rand -base64 32
-
-# Generate the admin secret
-openssl rand -base64 48
 ```
 
-Update the URL variables to match your domain:
+| Variable in `.env` | What it protects |
+|----------|---------|
+| `POSTGRES_PASSWORD` | PostgreSQL database access |
+| `MINIO_ROOT_PASSWORD` | MinIO (S3) storage access |
+| `UMAMI_DB_PASSWORD` | Umami analytics database access |
+| `UMAMI_APP_SECRET` | Umami session signing |
+
+For the admin secret (used to bootstrap API keys), use a longer value:
 
 ```bash
+openssl rand -base64 48
+# Copy the output and paste it as the ADMIN_SECRET value in .env
+```
+
+| Variable in `.env` | What it protects |
+|----------|---------|
+| `ADMIN_SECRET` | API key creation via admin endpoint ([details](api-keys.md)) |
+
+### URLs
+
+Replace all URL variables in `.env` with your actual domain:
+
+```ini
 BASE_URL=https://yourdomain.tld
 CORS_ORIGINS=https://yourdomain.tld
 NEXT_PUBLIC_API_URL=https://yourdomain.tld
