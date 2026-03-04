@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/jizo-hr/sharepwd/internal/model"
-	"github.com/jizo-hr/sharepwd/internal/repository"
+	"github.com/AntoninHY/sharepwd/internal/model"
+	"github.com/AntoninHY/sharepwd/internal/repository"
 )
 
 type APIKeyHandler struct {

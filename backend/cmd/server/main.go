@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jizo-hr/sharepwd/internal/config"
-	"github.com/jizo-hr/sharepwd/internal/server"
+	"github.com/AntoninHY/sharepwd/internal/config"
+	"github.com/AntoninHY/sharepwd/internal/server"
 )
 
 func main() {

@@ -7,12 +7,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jizo-hr/sharepwd/internal/config"
-	"github.com/jizo-hr/sharepwd/internal/handler"
-	"github.com/jizo-hr/sharepwd/internal/middleware"
-	"github.com/jizo-hr/sharepwd/internal/repository"
-	"github.com/jizo-hr/sharepwd/internal/service"
-	"github.com/jizo-hr/sharepwd/internal/storage"
+	"github.com/AntoninHY/sharepwd/internal/config"
+	"github.com/AntoninHY/sharepwd/internal/handler"
+	"github.com/AntoninHY/sharepwd/internal/middleware"
+	"github.com/AntoninHY/sharepwd/internal/repository"
+	"github.com/AntoninHY/sharepwd/internal/service"
+	"github.com/AntoninHY/sharepwd/internal/storage"
 )
 
 func NewRouter(db *pgxpool.Pool, cfg *config.Config) *chi.Mux {
