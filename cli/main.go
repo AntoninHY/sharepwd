@@ -38,6 +38,8 @@ func main() {
 		cmdPull(os.Args[2:])
 	case "delete":
 		cmdDelete(os.Args[2:])
+	case "admin":
+		cmdAdmin(os.Args[2:])
 	case "version":
 		cmdVersion()
 	case "help", "-h", "--help":
@@ -59,6 +61,7 @@ func printUsage() {
   push      Encrypt and share a secret
   pull      Retrieve and decrypt a secret
   delete    Delete a secret by creator token
+  admin     Admin operations (API key management)
   version   Show version information
   help      Show this help
 
@@ -68,6 +71,8 @@ func printUsage() {
   echo "secret" | sharepwd push --burn
   sharepwd pull https://sharepwd.io/s/abc123#key456
   sharepwd delete https://sharepwd.io/s/abc123 --creator-token def789
+  sharepwd admin keys create --name "ci" --admin-secret $SECRET
+  sharepwd admin keys list --api-key $KEY
 
 `,
 		color(colorBold, "SharePwd CLI — Zero-knowledge secret sharing"),
