@@ -1,3 +1,7 @@
+// SharePwd.io — Burn After Reading
+// Zero-knowledge secret sharing. Client-side AES-256-GCM encryption, secrets self-destruct after viewing.
+// Copyright (c) 2025-2026 Antonin HILY — CTO, Jizo AI
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export interface SecretMetadata {
