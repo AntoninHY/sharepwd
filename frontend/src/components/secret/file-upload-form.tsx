@@ -3,7 +3,8 @@
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { Upload, Lock, Clock, Eye, Flame, Copy, X, File as FileIcon } from "lucide-react";
+import { Upload, Lock, Clock, Eye, EyeOff, Flame, Copy, X, File as FileIcon } from "lucide-react";
+import PassphraseGenerator from "@/components/ui/passphrase-generator";
 import { encryptText, encryptWithPassphrase, toBase64 } from "@/lib/crypto";
 import { api } from "@/lib/api";
 import { EXPIRATION_OPTIONS, VIEW_OPTIONS } from "@/lib/types";
@@ -21,6 +22,7 @@ export default function FileUploadForm() {
   const [expiresIn, setExpiresIn] = useState("24h");
   const [maxViews, setMaxViews] = useState<number | undefined>(undefined);
   const [burnAfterRead, setBurnAfterRead] = useState(false);
+  const [showPassphrase, setShowPassphrase] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -174,26 +176,47 @@ export default function FileUploadForm() {
           <>
             <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">{t("dropzone")}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t("dropzoneLimit")}{" "}
-              <a href="mailto:contact@jizo.ai" className="text-primary hover:underline">{t("dropzoneContact")}</a>
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t("dropzoneMax")}</p>
           </>
         )}
       </div>
+      <p className="text-xs text-muted-foreground">
+        {t("dropzoneLimit")}{" "}
+        <a href="mailto:contact@jizo.ai" className="text-primary hover:underline">{t("dropzoneContact")}</a>
+      </p>
 
       <div>
         <label htmlFor="file-passphrase" className="block text-sm font-medium mb-2 flex items-center gap-2">
           <Lock className="h-4 w-4" /> {t("passphraseLabel")}
         </label>
-        <input
-          id="file-passphrase"
-          type="password"
-          value={passphrase}
-          onChange={(e) => setPassphrase(e.target.value)}
-          placeholder={t("passphrasePlaceholder")}
-          className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+        <div className="relative">
+          <input
+            id="file-passphrase"
+            type={showPassphrase ? "text" : "password"}
+            value={passphrase}
+            onChange={(e) => setPassphrase(e.target.value)}
+            placeholder={t("passphrasePlaceholder")}
+            className="w-full rounded-lg border border-border bg-card px-4 py-3 pr-10 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassphrase(!showPassphrase)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            title={t(showPassphrase ? "hidePassphrase" : "showPassphrase")}
+          >
+            {showPassphrase ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        <PassphraseGenerator
+          translationNamespace="fileUpload"
+          onGenerate={(value) => {
+            setPassphrase(value);
+            setShowPassphrase(true);
+          }}
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          {passphrase ? t("passphraseHintSet") : t("passphraseHintNone")}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
