@@ -83,3 +83,31 @@ type FilePayload struct {
 	Name string `json:"name"`
 	Data string `json:"data"`
 }
+
+// AdminCreateAPIKeyRequest is the payload for POST /v1/admin/api-keys.
+type AdminCreateAPIKeyRequest struct {
+	Name      string     `json:"name"`
+	RateLimit *int       `json:"rate_limit,omitempty"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+}
+
+// AdminCreateAPIKeyResponse is returned by POST /v1/admin/api-keys.
+type AdminCreateAPIKeyResponse struct {
+	ID        string `json:"id"`
+	Key       string `json:"key"`
+	KeyPrefix string `json:"key_prefix"`
+	Name      string `json:"name"`
+	RateLimit int    `json:"rate_limit"`
+}
+
+// APIKeyInfo represents an API key returned by GET /v1/api-keys.
+type APIKeyInfo struct {
+	ID         string     `json:"id"`
+	KeyPrefix  string     `json:"key_prefix"`
+	Name       string     `json:"name"`
+	RateLimit  int        `json:"rate_limit"`
+	IsActive   bool       `json:"is_active"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
+}
