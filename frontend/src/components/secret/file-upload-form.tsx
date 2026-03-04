@@ -176,13 +176,14 @@ export default function FileUploadForm() {
           <>
             <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">{t("dropzone")}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t("dropzoneLimit")}{" "}
-              <a href="mailto:contact@jizo.ai" className="text-primary hover:underline">{t("dropzoneContact")}</a>
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t("dropzoneMax")}</p>
           </>
         )}
       </div>
+      <p className="text-xs text-muted-foreground">
+        {t("dropzoneLimit")}{" "}
+        <a href="mailto:contact@jizo.ai" className="text-primary hover:underline">{t("dropzoneContact")}</a>
+      </p>
 
       <div>
         <label htmlFor="file-passphrase" className="block text-sm font-medium mb-2 flex items-center gap-2">
@@ -213,6 +214,9 @@ export default function FileUploadForm() {
             setShowPassphrase(true);
           }}
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          {passphrase ? t("passphraseHintSet") : t("passphraseHintNone")}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
