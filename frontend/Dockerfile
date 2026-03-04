@@ -8,8 +8,10 @@ ENV NEXT_PUBLIC_UMAMI_WEBSITE_ID=$NEXT_PUBLIC_UMAMI_WEBSITE_ID
 COPY package.json ./
 RUN npm install
 COPY . .
-ENV NEXT_PUBLIC_API_URL=https://sharepwd.io
-ENV NEXT_PUBLIC_APP_URL=https://sharepwd.io
+ARG NEXT_PUBLIC_API_URL=https://sharepwd.io
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_URL=https://sharepwd.io
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 CMD ["npm", "run", "dev"]
 
 # Build stage
@@ -20,8 +22,10 @@ ENV NEXT_PUBLIC_UMAMI_WEBSITE_ID=$NEXT_PUBLIC_UMAMI_WEBSITE_ID
 COPY package.json ./
 RUN npm install
 COPY . .
-ENV NEXT_PUBLIC_API_URL=https://sharepwd.io
-ENV NEXT_PUBLIC_APP_URL=https://sharepwd.io
+ARG NEXT_PUBLIC_API_URL=https://sharepwd.io
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_URL=https://sharepwd.io
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 RUN npm run build
 
 # Production stage
