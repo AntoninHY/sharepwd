@@ -40,6 +40,9 @@ type Config struct {
 	MaxNoncesPerIP        int           `envconfig:"MAX_NONCES_PER_IP" default:"3"`
 	MetadataRateLimit     int           `envconfig:"METADATA_RATE_LIMIT" default:"10"`
 	DefenseStrictMode     bool          `envconfig:"DEFENSE_STRICT_MODE" default:"false"`
+
+	// Admin
+	AdminSecret string `envconfig:"ADMIN_SECRET"`
 }
 
 func Load() (*Config, error) {

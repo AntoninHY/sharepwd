@@ -45,6 +45,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) *chi.Mux {
 	secretH := handler.NewSecretHandler(secretSvc, cfg)
 	apiKeyH := handler.NewAPIKeyHandler(apiKeyRepo)
 	fileH := handler.NewFileHandler(secretSvc, fileRepo, store, cfg)
+	adminH := handler.NewAdminHandler(apiKeyRepo)
 
 	// Routes
 	r.Route("/v1", func(r chi.Router) {
@@ -69,6 +70,16 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) *chi.Mux {
 			r.Get("/api-keys", apiKeyH.List)
 			r.Delete("/api-keys/{id}", apiKeyH.Revoke)
 		})
+
+		// Admin routes (only if ADMIN_SECRET is configured)
+		if cfg.AdminSecret != "" {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.AdminAuth(cfg.AdminSecret))
+				r.Use(middleware.RateLimit(3))
+				r.Post("/admin/api-keys", adminH.CreateAPIKey)
+			})
+			slog.Info("admin endpoint enabled", "path", "/v1/admin/api-keys")
+		}
 	})
 
 	return r
