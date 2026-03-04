@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"net/http"
 	"strings"
@@ -65,4 +66,21 @@ func APIKeyAuth(repo *repository.APIKeyRepository) func(http.Handler) http.Handl
 func GetAPIKey(ctx context.Context) *model.APIKey {
 	key, _ := ctx.Value(APIKeyContextKey).(*model.APIKey)
 	return key
+}
+
+// AdminAuth validates the X-Admin-Secret header against the configured admin secret.
+// Uses constant-time comparison to prevent timing attacks.
+func AdminAuth(secret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			provided := r.Header.Get("X-Admin-Secret")
+			if provided == "" || subtle.ConstantTimeCompare([]byte(provided), []byte(secret)) != 1 {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(`{"error":"unauthorized"}`))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
