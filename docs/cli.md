@@ -4,18 +4,12 @@ The `sharepwd` CLI lets you share and retrieve secrets from the command line.
 
 ## Installation
 
-Download the latest binary from [GitHub Releases](https://github.com/AntoninHY/sharepwd/releases):
+Build from source (requires Go 1.24+):
 
 ```bash
-# Linux (amd64)
-curl -Lo sharepwd https://github.com/AntoninHY/sharepwd/releases/latest/download/sharepwd-linux-amd64
-chmod +x sharepwd
-sudo mv sharepwd /usr/local/bin/
-
-# macOS (arm64)
-curl -Lo sharepwd https://github.com/AntoninHY/sharepwd/releases/latest/download/sharepwd-darwin-arm64
-chmod +x sharepwd
-sudo mv sharepwd /usr/local/bin/
+cd cli
+go build -o /tmp/sharepwd -ldflags "-s -w" .
+sudo mv /tmp/sharepwd /usr/local/bin/sharepwd
 ```
 
 Verify:
