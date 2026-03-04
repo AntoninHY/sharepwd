@@ -207,11 +207,12 @@ export default function CreateForm() {
           </label>
           <select
             id="maxViews"
-            value={maxViews ?? ""}
+            value={burnAfterRead ? "" : (maxViews ?? "")}
             onChange={(e) => setMaxViews(e.target.value ? Number(e.target.value) : undefined)}
-            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            disabled={burnAfterRead}
+            className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <option value="">{t("unlimited")}</option>
+            <option value="">{burnAfterRead ? t("burnSingleView") : t("unlimited")}</option>
             {VIEW_OPTIONS.map((n) => (
               <option key={n} value={n}>
                 {tViews("count", { count: n })}
@@ -225,7 +226,10 @@ export default function CreateForm() {
         <input
           type="checkbox"
           checked={burnAfterRead}
-          onChange={(e) => setBurnAfterRead(e.target.checked)}
+          onChange={(e) => {
+            setBurnAfterRead(e.target.checked);
+            if (e.target.checked) setMaxViews(undefined);
+          }}
           className="rounded border-border bg-card h-4 w-4 accent-primary"
         />
         <span className="text-sm flex items-center gap-2">
