@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jizo-hr/sharepwd/internal/config"
-	"github.com/jizo-hr/sharepwd/internal/repository"
-	"github.com/jizo-hr/sharepwd/internal/service"
+	"github.com/AntoninHY/sharepwd/internal/config"
+	"github.com/AntoninHY/sharepwd/internal/repository"
+	"github.com/AntoninHY/sharepwd/internal/service"
 )
 
 type Server struct {

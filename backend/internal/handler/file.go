@@ -11,11 +11,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/jizo-hr/sharepwd/internal/config"
-	"github.com/jizo-hr/sharepwd/internal/model"
-	"github.com/jizo-hr/sharepwd/internal/repository"
-	"github.com/jizo-hr/sharepwd/internal/service"
-	"github.com/jizo-hr/sharepwd/internal/storage"
+	"github.com/AntoninHY/sharepwd/internal/config"
+	"github.com/AntoninHY/sharepwd/internal/model"
+	"github.com/AntoninHY/sharepwd/internal/repository"
+	"github.com/AntoninHY/sharepwd/internal/service"
+	"github.com/AntoninHY/sharepwd/internal/storage"
 )
 
 type FileHandler struct {

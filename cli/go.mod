@@ -1,4 +1,4 @@
-module github.com/jizo-hr/sharepwd-cli
+module github.com/AntoninHY/sharepwd-cli
 
 go 1.24.0
 
