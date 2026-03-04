@@ -106,21 +106,6 @@ See the [Installation Guide](docs/installation.md) for TLS setup, first API key 
 | [CLI Reference](docs/cli.md) | Commands, flags, environment variables, exit codes |
 | [API Key Management](docs/api-keys.md) | Admin secret setup, bootstrap flow, creating/listing/revoking keys |
 
-## Development
-
-```bash
-# Start infrastructure (PostgreSQL + MinIO)
-make infra
-
-# Start all services in dev mode (hot reload)
-make dev
-
-# View logs
-make logs
-```
-
-Dev mode uses [Air](https://github.com/air-verse/air) for Go hot reload and `next dev` for the frontend.
-
 ## API
 
 Full API documentation is available at `/docs` on any running instance.
