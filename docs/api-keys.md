@@ -11,9 +11,9 @@ SharePwd uses a two-tier authentication model:
 | **Admin secret** (`ADMIN_SECRET`) | Bootstrap the first API key | Generated manually, set in server `.env` |
 | **API key** (`spwd_...`) | Programmatic access, key management | Created via admin secret or existing API key |
 
-**Bootstrap flow:** Generate admin secret → set in `.env` → create first API key → use API key for all further operations.
+**Bootstrap flow:** Generate admin secret → set in `.env` → create first API key → export API key → use it for all further operations.
 
-## Admin Secret
+## Step 1 — Admin Secret
 
 The admin secret is a shared secret between you and the server. It exists solely to create the first API key — after that, API keys are self-managing (any API key can create or revoke other keys).
 
@@ -25,7 +25,7 @@ openssl rand -base64 48
 
 ### Configure
 
-Add the generated value to your server's `deploy/.env`:
+Copy the output and paste it into your server's `deploy/.env`:
 
 ```
 ADMIN_SECRET=your_generated_secret_here
@@ -40,9 +40,7 @@ docker compose restart backend
 
 If `ADMIN_SECRET` is not set, the admin bootstrap endpoint (`POST /v1/admin/api-keys`) is disabled.
 
-## Creating API keys
-
-### Bootstrap: First key (admin secret)
+## Step 2 — Create the first API key
 
 **With the CLI:**
 
@@ -74,42 +72,30 @@ Response:
 }
 ```
 
-Save the `key` value immediately — it is displayed only once.
+The `key` value is displayed **only once**. Save it now.
 
-### Subsequent keys (API key)
+## Step 3 — Export your API key
 
-Once you have an API key, use it to create more:
-
-**With the CLI:**
+Set the key as an environment variable so all subsequent commands can use it:
 
 ```bash
-sharepwd admin keys create \
-  --name "ci-pipeline" \
-  --rate-limit 120 \
-  --expires-at "2026-12-31T23:59:59Z" \
-  --admin-secret "$ADMIN_SECRET" \
-  --server https://yourdomain.tld
+export SHAREPWD_API_KEY="spwd_...your_key_here..."
 ```
 
-**With curl:**
+To persist across sessions, add the export to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.).
+
+You can also set the admin secret the same way to avoid passing it as a flag:
 
 ```bash
-curl -s -X POST https://yourdomain.tld/v1/api-keys \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $API_KEY" \
-  -d '{"name": "ci-pipeline", "rate_limit": 120, "expires_at": "2026-12-31T23:59:59Z"}'
+export SHAREPWD_ADMIN_SECRET="your_admin_secret"
 ```
 
-Optional fields:
-- `rate_limit` — requests per minute (default: 60)
-- `expires_at` — RFC 3339 expiration time (default: never)
+From this point on, all examples assume these variables are set.
 
 ## Listing keys
 
-**With the CLI:**
-
 ```bash
-sharepwd admin keys list --api-key "$API_KEY"
+sharepwd admin keys list
 ```
 
 Outputs a table:
@@ -117,51 +103,53 @@ Outputs a table:
 ```
   ID         PREFIX      NAME           RATE   ACTIVE   CREATED
   550e84…    spwd_1a2b   initial-key    60     true     2026-03-01
-  661f95…    spwd_9x8w   ci-pipeline    120    true     2026-03-02
 ```
 
-**With curl:**
+With curl:
 
 ```bash
 curl -s https://yourdomain.tld/v1/api-keys \
-  -H "Authorization: Bearer $API_KEY"
+  -H "Authorization: Bearer $SHAREPWD_API_KEY"
 ```
+
+## Creating more keys
+
+Once you have an API key, use it to create additional keys:
+
+```bash
+sharepwd admin keys create \
+  --name "ci-pipeline" \
+  --rate-limit 120 \
+  --expires-at "2026-12-31T23:59:59Z"
+```
+
+With curl:
+
+```bash
+curl -s -X POST https://yourdomain.tld/v1/api-keys \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $SHAREPWD_API_KEY" \
+  -d '{"name": "ci-pipeline", "rate_limit": 120, "expires_at": "2026-12-31T23:59:59Z"}'
+```
+
+Optional fields:
+- `rate_limit` — requests per minute (default: 60)
+- `expires_at` — RFC 3339 expiration time (default: never)
 
 ## Revoking keys
 
-**With the CLI:**
-
 ```bash
-sharepwd admin keys revoke \
-  --id "550e8400-e29b-41d4-a716-446655440000" \
-  --api-key "$API_KEY"
+sharepwd admin keys revoke --id "550e8400-e29b-41d4-a716-446655440000"
 ```
 
-**With curl:**
+With curl:
 
 ```bash
 curl -s -X DELETE https://yourdomain.tld/v1/api-keys/550e8400-e29b-41d4-a716-446655440000 \
-  -H "Authorization: Bearer $API_KEY"
+  -H "Authorization: Bearer $SHAREPWD_API_KEY"
 ```
 
 Revoked keys are immediately deactivated and cannot be used for any operations.
-
-## Environment variables
-
-Set these to avoid passing credentials as flags:
-
-```bash
-export SHAREPWD_ADMIN_SECRET="your_admin_secret"
-export SHAREPWD_API_KEY="spwd_your_api_key"
-```
-
-Then commands simplify to:
-
-```bash
-sharepwd admin keys create --name "new-key"
-sharepwd admin keys list
-sharepwd admin keys revoke --id "..."
-```
 
 ## API key format
 
