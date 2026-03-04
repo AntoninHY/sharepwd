@@ -234,8 +234,8 @@ export default function FileUploadForm() {
           <label className="block text-sm font-medium mb-2 flex items-center gap-2">
             <Eye className="h-4 w-4" /> {t("maxViewsLabel")}
           </label>
-          <select value={maxViews ?? ""} onChange={(e) => setMaxViews(e.target.value ? Number(e.target.value) : undefined)} className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
-            <option value="">{t("unlimited")}</option>
+          <select value={burnAfterRead ? "" : (maxViews ?? "")} onChange={(e) => setMaxViews(e.target.value ? Number(e.target.value) : undefined)} disabled={burnAfterRead} className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed">
+            <option value="">{burnAfterRead ? t("burnSingleView") : t("unlimited")}</option>
             {VIEW_OPTIONS.map((n) => (
               <option key={n} value={n}>{tViews("count", { count: n })}</option>
             ))}
@@ -244,7 +244,7 @@ export default function FileUploadForm() {
       </div>
 
       <label className="flex items-center gap-3 cursor-pointer">
-        <input type="checkbox" checked={burnAfterRead} onChange={(e) => setBurnAfterRead(e.target.checked)} className="rounded border-border bg-card h-4 w-4 accent-primary" />
+        <input type="checkbox" checked={burnAfterRead} onChange={(e) => { setBurnAfterRead(e.target.checked); if (e.target.checked) setMaxViews(undefined); }} className="rounded border-border bg-card h-4 w-4 accent-primary" />
         <span className="text-sm flex items-center gap-2">
           <Flame className="h-4 w-4 text-destructive" /> {t("burnLabel")}
         </span>
