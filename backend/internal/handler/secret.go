@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jizo-hr/sharepwd/internal/config"
-	"github.com/jizo-hr/sharepwd/internal/middleware"
-	"github.com/jizo-hr/sharepwd/internal/model"
-	"github.com/jizo-hr/sharepwd/internal/service"
+	"github.com/AntoninHY/sharepwd/internal/config"
+	"github.com/AntoninHY/sharepwd/internal/middleware"
+	"github.com/AntoninHY/sharepwd/internal/model"
+	"github.com/AntoninHY/sharepwd/internal/service"
 )
 
 type SecretHandler struct {
