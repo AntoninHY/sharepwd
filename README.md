@@ -85,62 +85,26 @@ All layers are validated server-side. Bypassing one layer is possible — bypass
 
 ## Quick Start
 
-### Prerequisites
-
-- Docker Engine + Docker Compose plugin
-- A domain with DNS pointing to your server
-- TLS certificates (Let's Encrypt recommended)
-
-### 1. Clone
-
 ```bash
 git clone https://github.com/AntoninHY/sharepwd.git
 cd sharepwd
-```
-
-### 2. Configure
-
-```bash
 cp deploy/.env.example deploy/.env
-```
-
-Edit `deploy/.env` and set **strong, unique passwords** for:
-- `POSTGRES_PASSWORD`
-- `MINIO_ROOT_PASSWORD`
-- `UMAMI_DB_PASSWORD`
-- `UMAMI_APP_SECRET`
-- `ADMIN_SECRET` — generate with `openssl rand -base64 48`
-
-Update `BASE_URL`, `CORS_ORIGINS`, `NEXT_PUBLIC_API_URL`, and `NEXT_PUBLIC_APP_URL` to match your domain.
-
-> **Full deployment guide**: [`docs/installation.md`](docs/installation.md) — TLS setup, troubleshooting, and more.
-
-### 3. TLS Certificates
-
-Place your certificates in the standard Let's Encrypt path or update `deploy/nginx/nginx.conf`:
-
-```
-/etc/letsencrypt/live/yourdomain.tld/fullchain.pem
-/etc/letsencrypt/live/yourdomain.tld/privkey.pem
-```
-
-### 4. Deploy
-
-```bash
+# Edit deploy/.env — set passwords, admin secret, and domain URLs
 cd deploy
 docker compose up -d --build
 ```
 
-### 5. Verify
+Verify: `curl https://yourdomain.tld/v1/health` → `{"status":"ok"}`
 
-```bash
-# All containers should be running
-docker ps
+See the [Installation Guide](docs/installation.md) for TLS setup, first API key creation, and troubleshooting.
 
-# Health check
-curl https://yourdomain.tld/v1/health
-# → {"status":"ok"}
-```
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [Installation](docs/installation.md) | Full deployment guide — prerequisites, `.env` config, TLS, Docker Compose, troubleshooting |
+| [CLI Reference](docs/cli.md) | Commands, flags, environment variables, exit codes |
+| [API Key Management](docs/api-keys.md) | Admin secret setup, bootstrap flow, creating/listing/revoking keys |
 
 ## Development
 
@@ -161,7 +125,7 @@ Dev mode uses [Air](https://github.com/air-verse/air) for Go hot reload and `nex
 
 Full API documentation is available at `/docs` on any running instance.
 
-### Endpoints
+### Public Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -174,10 +138,17 @@ Full API documentation is available at `/docs` on any running instance.
 | `POST` | `/v1/files/:id/complete` | Finalize file upload |
 | `GET` | `/v1/files/:id/chunks/:index` | Download a file chunk |
 | `GET` | `/v1/health` | Health check |
-| `POST` | `/v1/admin/api-keys` | Create API key (admin bootstrap) |
-| `POST` | `/v1/api-keys` | Create API key (requires API key) |
-| `GET` | `/v1/api-keys` | List API keys |
-| `DELETE` | `/v1/api-keys/:id` | Revoke an API key |
+
+### Admin Endpoints (authenticated)
+
+Require `X-Admin-Secret` header or `Authorization: Bearer <api_key>`. See [API Key Management](docs/api-keys.md).
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/v1/admin/api-keys` | Admin secret | Bootstrap first API key |
+| `POST` | `/v1/api-keys` | API key | Create additional API keys |
+| `GET` | `/v1/api-keys` | API key | List all API keys |
+| `DELETE` | `/v1/api-keys/:id` | API key | Revoke an API key |
 
 ### Example: Create and reveal a secret
 
@@ -223,6 +194,7 @@ All configuration is done through environment variables. See [`deploy/.env.examp
 |----------|-------------|---------|
 | `POSTGRES_PASSWORD` | PostgreSQL password | — (required) |
 | `MINIO_ROOT_PASSWORD` | MinIO admin password | — (required) |
+| `ADMIN_SECRET` | Admin secret for API key bootstrapping ([details](docs/api-keys.md)) | — (optional) |
 | `BASE_URL` | Public URL of the instance | `https://sharepwd.io` |
 | `CORS_ORIGINS` | Allowed CORS origins | `https://sharepwd.io` |
 | `MAX_TEXT_SIZE` | Max text secret size (bytes) | `102400` |
@@ -236,7 +208,6 @@ All configuration is done through environment variables. See [`deploy/.env.examp
 | `CHALLENGE_TTL` | Nonce time-to-live | `5m` |
 | `MAX_NONCES_PER_IP` | Max active nonces per IP address | `3` |
 | `METADATA_RATE_LIMIT` | Requests per minute on metadata endpoint | `10` |
-| `ADMIN_SECRET` | Admin secret for API key bootstrapping ([details](docs/api-keys.md)) | — (optional) |
 | `BEHAVIORAL_MIN_SCORE` | Minimum behavioral score to pass (0-100) | `30` |
 | `ENV_MIN_SCORE` | Minimum environment fingerprint score (0-50) | `20` |
 
