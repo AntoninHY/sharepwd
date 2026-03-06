@@ -5,19 +5,17 @@
 package handler
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/redis/go-redis/v9"
 	"github.com/AntoninHY/sharepwd/internal/config"
 	"github.com/AntoninHY/sharepwd/internal/middleware"
 	"github.com/AntoninHY/sharepwd/internal/model"
@@ -30,121 +28,10 @@ type SecretHandler struct {
 	cfg     *config.Config
 }
 
-type nonceEntry struct {
-	ExpiresAt  time.Time
-	IssuedAt   time.Time // Layer 1: grace period server-side
-	IPHash     string    // Layer 3: IP binding
-	PowPrefix  string    // Layer 2: PoW challenge prefix
-	Difficulty uint8     // Layer 2: PoW difficulty
-}
-
-type nonceStore struct {
-	mu      sync.RWMutex
-	store   map[string]*nonceEntry
-	ipCount map[string]int
-	cfg     *config.Config
-}
-
-func newNonceStore(cfg *config.Config) *nonceStore {
-	ns := &nonceStore{
-		store:   make(map[string]*nonceEntry),
-		ipCount: make(map[string]int),
-		cfg:     cfg,
-	}
-	go ns.cleanup()
-	return ns
-}
-
-const maxNonces = 100000
-
-func (ns *nonceStore) generate(ipHash string) (string, *nonceEntry, error) {
-	ns.mu.Lock()
-	defer ns.mu.Unlock()
-
-	if len(ns.store) >= maxNonces {
-		return "", nil, fmt.Errorf("nonce store is full")
-	}
-
-	if ns.ipCount[ipHash] >= ns.cfg.MaxNoncesPerIP {
-		return "", nil, fmt.Errorf("too many active nonces for this IP")
-	}
-
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", nil, err
-	}
-	nonce := hex.EncodeToString(b)
-
-	pb := make([]byte, 16)
-	if _, err := rand.Read(pb); err != nil {
-		return "", nil, err
-	}
-	powPrefix := hex.EncodeToString(pb)
-
-	now := time.Now()
-	entry := &nonceEntry{
-		ExpiresAt:  now.Add(ns.cfg.ChallengeTTL),
-		IssuedAt:   now,
-		IPHash:     ipHash,
-		PowPrefix:  powPrefix,
-		Difficulty: ns.cfg.PowDifficulty,
-	}
-
-	ns.store[nonce] = entry
-	ns.ipCount[ipHash]++
-
-	return nonce, entry, nil
-}
-
-func (ns *nonceStore) validate(nonce string, ipHash string) (*nonceEntry, string) {
-	ns.mu.Lock()
-	defer ns.mu.Unlock()
-
-	entry, ok := ns.store[nonce]
-	if !ok {
-		return nil, "invalid challenge nonce"
-	}
-
-	// Consume nonce (single-use)
-	delete(ns.store, nonce)
-	ns.ipCount[entry.IPHash]--
-	if ns.ipCount[entry.IPHash] <= 0 {
-		delete(ns.ipCount, entry.IPHash)
-	}
-
-	if time.Now().After(entry.ExpiresAt) {
-		return nil, "challenge nonce expired"
-	}
-
-	if entry.IPHash != ipHash {
-		return nil, "IP mismatch on challenge nonce"
-	}
-
-	return entry, ""
-}
-
-func (ns *nonceStore) cleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
-	for range ticker.C {
-		ns.mu.Lock()
-		now := time.Now()
-		for k, entry := range ns.store {
-			if now.After(entry.ExpiresAt) {
-				ns.ipCount[entry.IPHash]--
-				if ns.ipCount[entry.IPHash] <= 0 {
-					delete(ns.ipCount, entry.IPHash)
-				}
-				delete(ns.store, k)
-			}
-		}
-		ns.mu.Unlock()
-	}
-}
-
-func NewSecretHandler(svc *service.SecretService, cfg *config.Config) *SecretHandler {
+func NewSecretHandler(svc *service.SecretService, rdb *redis.Client, cfg *config.Config) *SecretHandler {
 	return &SecretHandler{
 		service: svc,
-		nonces:  newNonceStore(cfg),
+		nonces:  newNonceStore(rdb, cfg),
 		cfg:     cfg,
 	}
 }
@@ -216,6 +103,7 @@ func (h *SecretHandler) GetMetadata(w http.ResponseWriter, r *http.Request) {
 		ChallengeNonce string `json:"challenge_nonce"`
 		PowChallenge   string `json:"pow_challenge"`
 		PowDifficulty  uint8  `json:"pow_difficulty"`
+		HMACKey        string `json:"hmac_key"`
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -224,6 +112,7 @@ func (h *SecretHandler) GetMetadata(w http.ResponseWriter, r *http.Request) {
 		ChallengeNonce: nonce,
 		PowChallenge:   entry.PowPrefix,
 		PowDifficulty:  entry.Difficulty,
+		HMACKey:        entry.HMACKey,
 	})
 }
 
@@ -243,7 +132,6 @@ func (h *SecretHandler) Reveal(w http.ResponseWriter, r *http.Request) {
 	ip := extractIP(r)
 	ipH := hashIP(ip)
 
-	// Check if request comes from an API key (skip behavioral/env checks)
 	hasAPIKey := middleware.GetAPIKey(r.Context()) != nil
 
 	// Layer 3: Validate nonce (single-use, IP-bound, not expired)
@@ -288,6 +176,24 @@ func (h *SecretHandler) Reveal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if req.BehavioralProof != "" {
+			// Verify HMAC signature on behavioral proof
+			if h.cfg.DefenseStrictMode {
+				if req.BehavioralSig == "" {
+					slog.Warn("missing behavioral HMAC signature", "ip_hash", ipH[:8])
+					writeError(w, http.StatusForbidden, "behavioral proof signature required")
+					return
+				}
+				if !verifyProofHMAC(entry.HMACKey, req.ChallengeNonce, req.BehavioralProof, req.BehavioralSig) {
+					slog.Warn("behavioral HMAC verification failed", "ip_hash", ipH[:8])
+					writeError(w, http.StatusForbidden, "invalid behavioral proof signature")
+					return
+				}
+			} else if req.BehavioralSig != "" {
+				if !verifyProofHMAC(entry.HMACKey, req.ChallengeNonce, req.BehavioralProof, req.BehavioralSig) {
+					slog.Warn("behavioral HMAC verification failed (non-strict)", "ip_hash", ipH[:8])
+				}
+			}
+
 			score, isTouch := scoreBehavioral(req.BehavioralProof)
 			threshold := h.cfg.BehavioralMinScore
 			if isTouch {
@@ -317,6 +223,24 @@ func (h *SecretHandler) Reveal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if req.EnvFingerprint != "" {
+			// Verify HMAC signature on env fingerprint
+			if h.cfg.DefenseStrictMode {
+				if req.EnvSig == "" {
+					slog.Warn("missing env HMAC signature", "ip_hash", ipH[:8])
+					writeError(w, http.StatusForbidden, "environment proof signature required")
+					return
+				}
+				if !verifyProofHMAC(entry.HMACKey, req.ChallengeNonce, req.EnvFingerprint, req.EnvSig) {
+					slog.Warn("env HMAC verification failed", "ip_hash", ipH[:8])
+					writeError(w, http.StatusForbidden, "invalid environment proof signature")
+					return
+				}
+			} else if req.EnvSig != "" {
+				if !verifyProofHMAC(entry.HMACKey, req.ChallengeNonce, req.EnvFingerprint, req.EnvSig) {
+					slog.Warn("env HMAC verification failed (non-strict)", "ip_hash", ipH[:8])
+				}
+			}
+
 			envScore := scoreEnvFingerprint(req.EnvFingerprint)
 			if envScore < h.cfg.EnvMinScore {
 				slog.Warn("env fingerprint score too low",

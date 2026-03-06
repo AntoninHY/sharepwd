@@ -13,6 +13,7 @@ import { api, type SecretMetadata, type RevealSecretResponse } from "@/lib/api";
 import { solvePoW, type PowResult } from "@/lib/pow";
 import { BehavioralCollector } from "@/lib/behavioral";
 import { collectEnvFingerprint } from "@/lib/env-fingerprint";
+import { signProof } from "@/lib/hmac";
 
 // Minimum delay (ms) between nonce issuance and reveal request.
 // Must exceed the server-side ChallengeMinSolveTime (1500ms) plus network latency margin.
@@ -102,15 +103,30 @@ export default function FileDownload({ token }: FileDownloadProps) {
         await new Promise((r) => setTimeout(r, MIN_CHALLENGE_DELAY - elapsed));
       }
 
+      // Collect defense proofs and sign them with HMAC
       const behavioralProof = behavioralRef.current?.generateProof();
       const envFp = collectEnvFingerprint();
+
+      let behavioralSig: string | undefined;
+      let envSig: string | undefined;
+
+      if (metadata.hmac_key) {
+        if (behavioralProof) {
+          behavioralSig = await signProof(metadata.hmac_key, metadata.challenge_nonce, behavioralProof);
+        }
+        if (envFp) {
+          envSig = await signProof(metadata.hmac_key, metadata.challenge_nonce, envFp);
+        }
+      }
 
       const revealed = revealedData || await api.revealSecret(
         token,
         metadata.challenge_nonce,
         powResult?.counter,
         behavioralProof,
+        behavioralSig,
         envFp,
+        envSig,
       );
       if (!revealedData) setRevealedData(revealed);
 

@@ -33,6 +33,9 @@ type Config struct {
 	StorageBackend string `envconfig:"STORAGE_BACKEND" default:"s3"`
 	LocalStorePath string `envconfig:"LOCAL_STORE_PATH" default:"/data/files"`
 
+	// Redis
+	RedisURL string `envconfig:"REDIS_URL" default:"redis://localhost:6379"`
+
 	// Rate limiting
 	RateLimitPublic int `envconfig:"RATE_LIMIT_PUBLIC" default:"30"`
 
