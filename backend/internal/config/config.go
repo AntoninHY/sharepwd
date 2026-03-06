@@ -5,6 +5,7 @@
 package config
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -43,7 +44,7 @@ type Config struct {
 	EnvMinScore           int           `envconfig:"ENV_MIN_SCORE" default:"20"`
 	MaxNoncesPerIP        int           `envconfig:"MAX_NONCES_PER_IP" default:"3"`
 	MetadataRateLimit     int           `envconfig:"METADATA_RATE_LIMIT" default:"10"`
-	DefenseStrictMode     bool          `envconfig:"DEFENSE_STRICT_MODE" default:"false"`
+	DefenseStrictMode     bool          `envconfig:"DEFENSE_STRICT_MODE" default:"true"`
 
 	// Admin
 	AdminSecret string `envconfig:"ADMIN_SECRET"`
@@ -53,6 +54,9 @@ func Load() (*Config, error) {
 	var cfg Config
 	if err := envconfig.Process("", &cfg); err != nil {
 		return nil, err
+	}
+	if !cfg.DefenseStrictMode {
+		slog.Warn("DEFENSE_STRICT_MODE is disabled: anti-bot layers are log-only")
 	}
 	return &cfg, nil
 }

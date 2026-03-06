@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -390,16 +391,10 @@ func writeError(w http.ResponseWriter, status int, message string) {
 }
 
 func extractIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		parts := strings.Split(xff, ",")
-		return strings.TrimSpace(parts[0])
-	}
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
-	}
-	idx := strings.LastIndex(r.RemoteAddr, ":")
-	if idx == -1 {
+	// chi RealIP middleware already sets r.RemoteAddr from trusted proxy headers
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
 		return r.RemoteAddr
 	}
-	return r.RemoteAddr[:idx]
+	return ip
 }

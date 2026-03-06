@@ -96,6 +96,7 @@ func (s *SecretService) Create(ctx context.Context, req *model.CreateSecretReque
 	)
 
 	return &model.CreateSecretResponse{
+		SecretID:     secret.ID.String(),
 		AccessToken:  accessToken,
 		CreatorToken: creatorTokenRaw,
 		ExpiresAt:    secret.ExpiresAt,
@@ -193,4 +194,15 @@ func generateToken(n int) (string, error) {
 func hashSHA256(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(h[:])
+}
+
+func (s *SecretService) GetIDByAccessToken(ctx context.Context, token string) (uuid.UUID, error) {
+	secret, err := s.repo.GetByAccessToken(ctx, token)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if secret == nil {
+		return uuid.Nil, fmt.Errorf("secret not found")
+	}
+	return secret.ID, nil
 }

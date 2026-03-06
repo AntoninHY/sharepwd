@@ -74,6 +74,7 @@ type RevealSecretResponse struct {
 }
 
 type CreateSecretResponse struct {
+	SecretID     string     `json:"secret_id,omitempty"`
 	AccessToken  string     `json:"access_token"`
 	CreatorToken string     `json:"creator_token"`
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`

@@ -82,11 +82,13 @@ func (h *FileHandler) InitUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	secretID, _ := uuid.Parse(secretResp.SecretID)
 	fileID := uuid.New()
 	storageKey := fmt.Sprintf("files/%s/%s", secretResp.AccessToken, fileID.String())
 
 	file := &model.File{
 		ID:             fileID,
+		SecretID:       secretID,
 		EncryptedName:  req.EncryptedName,
 		FileSize:       0,
 		OriginalSize:   req.OriginalSize,
@@ -198,6 +200,12 @@ func (h *FileHandler) DownloadChunk(w http.ResponseWriter, r *http.Request) {
 	fileIDStr := chi.URLParam(r, "id")
 	chunkStr := chi.URLParam(r, "n")
 
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		writeError(w, http.StatusBadRequest, "token is required")
+		return
+	}
+
 	fileID, err := uuid.Parse(fileIDStr)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid file id")
@@ -213,6 +221,13 @@ func (h *FileHandler) DownloadChunk(w http.ResponseWriter, r *http.Request) {
 	file, err := h.fileRepo.GetByID(r.Context(), fileID)
 	if err != nil || file == nil || !file.UploadComplete {
 		writeError(w, http.StatusNotFound, "file not found")
+		return
+	}
+
+	// Verify the file belongs to the secret identified by the token
+	secretID, err := h.secretService.GetIDByAccessToken(r.Context(), token)
+	if err != nil || secretID != file.SecretID {
+		writeError(w, http.StatusForbidden, "invalid token")
 		return
 	}
 
