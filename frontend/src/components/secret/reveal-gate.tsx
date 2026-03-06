@@ -14,6 +14,10 @@ import { solvePoW, type PowResult } from "@/lib/pow";
 import { BehavioralCollector } from "@/lib/behavioral";
 import { collectEnvFingerprint } from "@/lib/env-fingerprint";
 
+// Minimum delay (ms) between nonce issuance and reveal request.
+// Must exceed the server-side ChallengeMinSolveTime (1500ms) plus network latency margin.
+const MIN_CHALLENGE_DELAY = 2000;
+
 interface RevealGateProps {
   token: string;
 }
@@ -30,9 +34,10 @@ export default function RevealGate({ token }: RevealGateProps) {
   const [passphraseError, setPassphraseError] = useState<string | null>(null);
   const [revealedData, setRevealedData] = useState<RevealSecretResponse | null>(null);
 
-  const powResultRef = useRef<PowResult | null>(null);
+  const powPromiseRef = useRef<Promise<PowResult> | null>(null);
   const powAbortRef = useRef<(() => void) | null>(null);
   const behavioralRef = useRef<BehavioralCollector | null>(null);
+  const challengeReceivedAt = useRef<number>(0);
 
   // Start behavioral collector on mount
   useEffect(() => {
@@ -47,6 +52,7 @@ export default function RevealGate({ token }: RevealGateProps) {
     async function fetchMetadata() {
       try {
         const meta = await api.getSecretMetadata(token);
+        challengeReceivedAt.current = Date.now();
         if (meta.is_expired) {
           setError(t("errorExpired"));
           return;
@@ -57,11 +63,7 @@ export default function RevealGate({ token }: RevealGateProps) {
         if (meta.pow_challenge && meta.pow_difficulty) {
           const { promise, abort } = solvePoW(meta.pow_challenge, meta.pow_difficulty);
           powAbortRef.current = abort;
-          promise.then((result) => {
-            powResultRef.current = result;
-          }).catch(() => {
-            // PoW failure is non-fatal in non-strict mode
-          });
+          powPromiseRef.current = promise;
         }
       } catch {
         setError(t("errorNotFound"));
@@ -93,15 +95,23 @@ export default function RevealGate({ token }: RevealGateProps) {
     setRevealing(true);
     setPassphraseError(null);
     try {
+      // Wait for PoW to complete before sending reveal
+      const powResult = powPromiseRef.current ? await powPromiseRef.current : null;
+
+      // Ensure minimum delay since challenge was issued (server-side grace period)
+      const elapsed = Date.now() - challengeReceivedAt.current;
+      if (elapsed < MIN_CHALLENGE_DELAY) {
+        await new Promise((r) => setTimeout(r, MIN_CHALLENGE_DELAY - elapsed));
+      }
+
       // Collect defense proofs
-      const powSolution = powResultRef.current?.counter;
       const behavioralProof = behavioralRef.current?.generateProof();
       const envFp = collectEnvFingerprint();
 
       const revealed = revealedData || await api.revealSecret(
         token,
         metadata.challenge_nonce,
-        powSolution,
+        powResult?.counter,
         behavioralProof,
         envFp,
       );
