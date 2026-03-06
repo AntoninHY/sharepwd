@@ -5,12 +5,14 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/AntoninHY/sharepwd/internal/config"
 	"github.com/AntoninHY/sharepwd/internal/handler"
 	"github.com/AntoninHY/sharepwd/internal/middleware"
@@ -29,6 +31,19 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) *chi.Mux {
 	r.Use(middleware.SecurityHeaders(cfg.CORSOrigins))
 	r.Use(middleware.RateLimit(cfg.RateLimitPublic))
 
+	// Redis client
+	rdsOpts, err := redis.ParseURL(cfg.RedisURL)
+	if err != nil {
+		slog.Error("failed to parse REDIS_URL", "error", err)
+		panic(fmt.Sprintf("failed to parse REDIS_URL: %v", err))
+	}
+	rdb := redis.NewClient(rdsOpts)
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		slog.Error("failed to connect to Redis", "error", err)
+		panic(fmt.Sprintf("failed to connect to Redis: %v", err))
+	}
+	slog.Info("connected to Redis", "addr", rdsOpts.Addr)
+
 	// Repositories
 	secretRepo := repository.NewSecretRepository(db)
 	apiKeyRepo := repository.NewAPIKeyRepository(db)
@@ -46,7 +61,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) *chi.Mux {
 
 	// Handlers
 	healthH := handler.NewHealthHandler()
-	secretH := handler.NewSecretHandler(secretSvc, cfg)
+	secretH := handler.NewSecretHandler(secretSvc, rdb, cfg)
 	apiKeyH := handler.NewAPIKeyHandler(apiKeyRepo)
 	fileH := handler.NewFileHandler(secretSvc, fileRepo, store, cfg)
 	adminH := handler.NewAdminHandler(apiKeyRepo)

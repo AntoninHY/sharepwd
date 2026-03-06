@@ -17,6 +17,7 @@ export interface SecretMetadata {
   challenge_nonce: string;
   pow_challenge: string;
   pow_difficulty: number;
+  hmac_key: string;
 }
 
 export interface CreateSecretPayload {
@@ -83,7 +84,9 @@ export const api = {
     challengeNonce: string,
     powSolution?: number,
     behavioralProof?: string,
+    behavioralSig?: string,
     envFingerprint?: string,
+    envSig?: string,
   ): Promise<RevealSecretResponse> {
     return request(`/v1/secrets/${token}/reveal`, {
       method: "POST",
@@ -91,7 +94,9 @@ export const api = {
         challenge_nonce: challengeNonce,
         ...(powSolution && { pow_solution: powSolution }),
         ...(behavioralProof && { behavioral_proof: behavioralProof }),
+        ...(behavioralSig && { behavioral_sig: behavioralSig }),
         ...(envFingerprint && { env_fingerprint: envFingerprint }),
+        ...(envSig && { env_sig: envSig }),
       }),
     });
   },
