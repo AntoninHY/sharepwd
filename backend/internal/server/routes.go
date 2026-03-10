@@ -75,6 +75,7 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) *chi.Mux {
 		r.Put("/secrets/file/{id}/chunk/{n}", fileH.UploadChunk)
 		r.Post("/secrets/file/{id}/complete", fileH.CompleteUpload)
 		r.Get("/secrets/file/{id}/chunk/{n}", fileH.DownloadChunk)
+		r.Get("/secrets/{token}/file", fileH.GetFileInfo)
 
 		// Public secret routes
 		r.Post("/secrets", secretH.Create)

@@ -247,3 +247,31 @@ func (h *FileHandler) DownloadChunk(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	io.Copy(w, reader)
 }
+
+func (h *FileHandler) GetFileInfo(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	if token == "" {
+		writeError(w, http.StatusBadRequest, "token is required")
+		return
+	}
+
+	secretID, err := h.secretService.GetIDByAccessToken(r.Context(), token)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "secret not found")
+		return
+	}
+
+	file, err := h.fileRepo.GetBySecretID(r.Context(), secretID)
+	if err != nil || file == nil || !file.UploadComplete {
+		writeError(w, http.StatusNotFound, "file not found")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(model.FileMetadata{
+		FileID:        file.ID.String(),
+		EncryptedName: file.EncryptedName,
+		OriginalSize:  file.OriginalSize,
+		ChunkCount:    file.ChunkCount,
+	})
+}
