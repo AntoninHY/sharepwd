@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { Upload, Lock, Clock, Eye, EyeOff, Flame, Copy, X, File as FileIcon } from "lucide-react";
 import PassphraseGenerator from "@/components/ui/passphrase-generator";
-import { encryptText, encryptWithPassphrase, toBase64 } from "@/lib/crypto";
+import { encryptText, encryptWithPassphrase, toBase64, fromBase64 } from "@/lib/crypto";
 import { api } from "@/lib/api";
 import { EXPIRATION_OPTIONS, VIEW_OPTIONS } from "@/lib/types";
 
@@ -73,42 +73,57 @@ export default function FileUploadForm() {
         data: toBase64(fileBytes),
       });
 
-      let encryptedData: string;
       let iv: string;
       let salt: string | null = null;
       let keyFragment: string | null = null;
+      let encryptedBytes: Uint8Array;
 
-      setProgress(30);
+      setProgress(10);
 
       if (passphrase) {
         const result = await encryptWithPassphrase(filePayload, passphrase);
-        encryptedData = result.encryptedData;
+        encryptedBytes = fromBase64(result.encryptedData);
         iv = result.iv;
         salt = result.salt;
       } else {
         const result = await encryptText(filePayload);
-        encryptedData = result.encryptedData;
+        encryptedBytes = fromBase64(result.encryptedData);
         iv = result.iv;
         keyFragment = result.key;
       }
 
-      setProgress(60);
+      setProgress(20);
 
-      const response = await api.createSecret({
-        encrypted_data: encryptedData,
-        iv,
-        salt,
+      const CHUNK_SIZE = 1024 * 1024; // 1MB
+      const chunkCount = Math.max(1, Math.ceil(encryptedBytes.length / CHUNK_SIZE));
+
+      const initResponse = await api.initFileUpload({
+        encrypted_name: crypto.randomUUID(),
+        original_size: file.size,
+        chunk_count: chunkCount,
         max_views: maxViews || null,
         expires_in: expiresIn || null,
         burn_after_read: burnAfterRead,
-        content_type: "file",
+        iv,
+        salt,
       });
 
+      setProgress(30);
+
+      for (let i = 0; i < chunkCount; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, encryptedBytes.length);
+        const chunk = encryptedBytes.slice(start, end);
+        await api.uploadChunk(initResponse.file_id, i, chunk);
+        setProgress(30 + Math.round(((i + 1) / chunkCount) * 60));
+      }
+
+      await api.completeUpload(initResponse.file_id);
       setProgress(100);
 
       const url = keyFragment
-        ? `${APP_URL}/f/${response.access_token}#${keyFragment}`
-        : `${APP_URL}/f/${response.access_token}`;
+        ? `${APP_URL}/f/${initResponse.access_token}#${keyFragment}`
+        : `${APP_URL}/f/${initResponse.access_token}`;
 
       setShareUrl(url);
       toast.success(t("toastSuccess"));

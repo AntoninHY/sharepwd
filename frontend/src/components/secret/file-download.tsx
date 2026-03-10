@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { Download, Lock, AlertTriangle, Clock, Flame, Eye } from "lucide-react";
-import { decryptText, decryptWithPassphrase, fromBase64 } from "@/lib/crypto";
+import { decryptText, decryptWithPassphrase, fromBase64, toBase64 } from "@/lib/crypto";
 import { api, type SecretMetadata, type RevealSecretResponse } from "@/lib/api";
 import { solvePoW, type PowResult } from "@/lib/pow";
 import { BehavioralCollector } from "@/lib/behavioral";
@@ -132,13 +132,35 @@ export default function FileDownload({ token }: FileDownloadProps) {
 
       const keyFragment = window.location.hash.slice(1);
 
+      let encryptedData: string;
+
+      // Chunked file: download chunks and reassemble
+      if (revealed.encrypted_data === "file_placeholder") {
+        const fileInfo = await api.getFileInfo(token);
+        const chunks: Uint8Array[] = [];
+        for (let i = 0; i < fileInfo.chunk_count; i++) {
+          chunks.push(await api.downloadChunk(fileInfo.file_id, i, token));
+        }
+        const totalLen = chunks.reduce((sum, c) => sum + c.length, 0);
+        const assembled = new Uint8Array(totalLen);
+        let off = 0;
+        for (const chunk of chunks) {
+          assembled.set(chunk, off);
+          off += chunk.length;
+        }
+        encryptedData = toBase64(assembled);
+      } else {
+        // Legacy: encrypted data stored directly on secret
+        encryptedData = revealed.encrypted_data;
+      }
+
       let decryptedPayload: string;
       if (metadata.has_passphrase) {
         if (!revealed.salt) throw new Error("Missing salt");
-        decryptedPayload = await decryptWithPassphrase(revealed.encrypted_data, revealed.iv, revealed.salt, passphrase);
+        decryptedPayload = await decryptWithPassphrase(encryptedData, revealed.iv, revealed.salt, passphrase);
       } else {
         if (!keyFragment) throw new Error("Missing encryption key in URL");
-        decryptedPayload = await decryptText(revealed.encrypted_data, revealed.iv, keyFragment);
+        decryptedPayload = await decryptText(encryptedData, revealed.iv, keyFragment);
       }
 
       let fileName = "downloaded-file";

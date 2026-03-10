@@ -41,6 +41,7 @@ type InitFileUploadResponse struct {
 }
 
 type FileMetadata struct {
+	FileID        string `json:"file_id"`
 	EncryptedName string `json:"encrypted_name"`
 	OriginalSize  int64  `json:"original_size"`
 	ChunkCount    int    `json:"chunk_count"`
