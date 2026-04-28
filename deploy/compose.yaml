@@ -74,6 +74,7 @@ services:
       MAX_TEXT_SIZE: ${MAX_TEXT_SIZE:-102400}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
       CLEANUP_INTERVAL: ${CLEANUP_INTERVAL:-60s}
+      ADMIN_SECRET: ${ADMIN_SECRET:?ADMIN_SECRET is required}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
