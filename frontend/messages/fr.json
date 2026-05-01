@@ -12,7 +12,7 @@
   "footer": {
     "builtBy": "Créé par",
     "zeroKnowledge": "Chiffrement zero-knowledge — vos données ne transitent jamais en clair sur nos serveurs.",
-    "hosting": "Hébergé en France par OVHCloud, opérateur cloud européen de confiance. Non soumis aux lois extra-territoriales (Cloud Act, FISA, etc.)."
+    "hosting": "Hébergé en France par Scaleway, opérateur cloud européen de confiance. Non soumis aux lois extra-territoriales (Cloud Act, FISA, etc.)."
   },
   "home": {
     "badge": "Chiffrement Zero-Knowledge",
@@ -55,7 +55,7 @@
     "compOss": "Open source (AGPLv3)",
     "compSelfHost": "Auto-hébergeable",
     "sovereigntyTitle": "Souveraineté européenne",
-    "sovereigntyDesc": "SharePwd est hébergé en France par OVHCloud, opérateur cloud européen de confiance. Vos données restent en Europe et ne sont soumises à aucune loi extra-territoriale comme le Cloud Act américain, FISA ou toute autre loi de surveillance étrangère.",
+    "sovereigntyDesc": "SharePwd est hébergé en France par Scaleway, opérateur cloud européen de confiance. Vos données restent en Europe et ne sont soumises à aucune loi extra-territoriale comme le Cloud Act américain, FISA ou toute autre loi de surveillance étrangère.",
     "sovereigntyBadge": "Hébergé en France"
   },
   "create": {

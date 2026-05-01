@@ -12,7 +12,7 @@
   "footer": {
     "builtBy": "Built by",
     "zeroKnowledge": "Zero-knowledge encryption — your data never touches our servers in plaintext.",
-    "hosting": "Hosted in France by OVHCloud, a trusted European cloud provider. Not subject to any extraterritorial legislation (Cloud Act, FISA, etc.)."
+    "hosting": "Hosted in France by Scaleway, a trusted European cloud provider. Not subject to any extraterritorial legislation (Cloud Act, FISA, etc.)."
   },
   "home": {
     "badge": "Zero-Knowledge Encryption",
@@ -55,7 +55,7 @@
     "compOss": "Open source (AGPLv3)",
     "compSelfHost": "Self-hostable",
     "sovereigntyTitle": "European Sovereignty",
-    "sovereigntyDesc": "SharePwd is hosted in France by OVHCloud, a trusted European cloud provider. Your data stays in Europe and is not subject to any extraterritorial legislation such as the US Cloud Act, FISA, or similar foreign surveillance laws.",
+    "sovereigntyDesc": "SharePwd is hosted in France by Scaleway, a trusted European cloud provider. Your data stays in Europe and is not subject to any extraterritorial legislation such as the US Cloud Act, FISA, or similar foreign surveillance laws.",
     "sovereigntyBadge": "Hosted in France"
   },
   "create": {
