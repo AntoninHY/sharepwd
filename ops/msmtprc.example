@@ -1,0 +1,64 @@
+# msmtp configuration for SharePwd notifications
+# Install at /etc/msmtprc with mode 0600 (root:root).
+#
+# msmtp is a sendmail-compatible MTA that relays a single message and exits.
+# `bsd-mailx` (or any tool calling /usr/sbin/sendmail) will use this config.
+#
+# Pick ONE provider below and adapt credentials. Test with:
+#   echo "test" | sudo mail -s "smtp test" you@example.com
+#
+# See https://marlam.de/msmtp/msmtprc.5.html for the full reference.
+
+defaults
+syslog on
+logfile /var/log/msmtp.log
+tls on
+tls_starttls on
+
+# ── Option 1: Gmail / Google Workspace ──────────────────────────
+# Requires an App Password (https://myaccount.google.com/apppasswords)
+#
+# account default
+# host smtp.gmail.com
+# port 587
+# auth on
+# user notifications@example.com
+# password your-app-password-here
+# from notifications@example.com
+# set_from_header on
+
+# ── Option 2: Mailgun ───────────────────────────────────────────
+# https://documentation.mailgun.com/en/latest/user_manual.html#smtp-relay
+#
+# account default
+# host smtp.mailgun.org
+# port 587
+# auth on
+# user postmaster@mg.example.com
+# password your-mailgun-smtp-password
+# from notifications@example.com
+# set_from_header on
+
+# ── Option 3: Postmark ──────────────────────────────────────────
+# https://postmarkapp.com/developer/user-guide/send-email-with-smtp
+#
+# account default
+# host smtp.postmarkapp.com
+# port 587
+# auth on
+# user your-postmark-server-token
+# password your-postmark-server-token
+# from notifications@example.com
+# set_from_header on
+
+# ── Option 4: Local relay, IP whitelisted, no auth ──────────────
+# Useful when the host runs on a private network with an outbound MTA
+# that whitelists this server's IP. Replace `relay.example.com`.
+#
+# account default
+# host relay.example.com
+# port 25
+# tls off
+# auth off
+# from notifications@example.com
+# set_from_header on
