@@ -16,6 +16,7 @@ out/
 *.swo
 
 # OS
+._*
 .DS_Store
 Thumbs.db
 

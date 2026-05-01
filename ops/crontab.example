@@ -1,0 +1,12 @@
+# Root crontab entries for SharePwd production.
+# Install via `sudo crontab -e`, or use ops/deploy.sh which deduplicates these lines automatically.
+
+# Daily Let's Encrypt renewal at 03:00 UTC, with in-place nginx reload via deploy-hook.
+# (The renewal config /etc/letsencrypt/renewal/<your-domain>.conf should also set
+#  renew_hook = docker restart deploy-nginx-1 as a fallback for renewals triggered
+#  by certbot's systemd timer rather than this cron line.)
+0 3 * * * certbot renew --webroot -w /var/lib/docker/volumes/deploy_certbot_webroot/_data --deploy-hook "docker exec deploy-nginx-1 nginx -s reload" >> /var/log/certbot-renew.log 2>&1
+
+# Daily health report at 07:00 UTC (HTTP, containers, SSL, host metrics).
+# Sends mail via msmtp + optional Rocket.Chat webhook (see /etc/sharepwd-monitoring.env).
+0 7 * * * /usr/local/sbin/sharepwd-health.sh >> /var/log/sharepwd-health.log 2>&1
