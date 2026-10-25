@@ -17,15 +17,18 @@ import (
 	"github.com/AntoninHY/sharepwd/internal/config"
 	"github.com/AntoninHY/sharepwd/internal/model"
 	"github.com/AntoninHY/sharepwd/internal/repository"
+	"github.com/AntoninHY/sharepwd/internal/storage"
 )
 
 type SecretService struct {
-	repo   *repository.SecretRepository
-	config *config.Config
+	repo     *repository.SecretRepository
+	fileRepo *repository.FileRepository
+	store    storage.Storage
+	config   *config.Config
 }
 
-func NewSecretService(repo *repository.SecretRepository, cfg *config.Config) *SecretService {
-	return &SecretService{repo: repo, config: cfg}
+func NewSecretService(repo *repository.SecretRepository, fileRepo *repository.FileRepository, store storage.Storage, cfg *config.Config) *SecretService {
+	return &SecretService{repo: repo, fileRepo: fileRepo, store: store, config: cfg}
 }
 
 func (s *SecretService) Create(ctx context.Context, req *model.CreateSecretRequest, ip, ua string) (*model.CreateSecretResponse, error) {
@@ -180,6 +183,21 @@ func (s *SecretService) Delete(ctx context.Context, accessToken, creatorToken st
 	if secret == nil {
 		return fmt.Errorf("secret not found or invalid creator token")
 	}
+
+	// The attached file has to be read before the secret row goes: deleting it
+	// cascades to files and takes storage_key with it.
+	file, err := s.fileRepo.GetBySecretID(ctx, secret.ID)
+	if err != nil {
+		return fmt.Errorf("get file of secret: %w", err)
+	}
+	if file != nil {
+		// Reported rather than swallowed, so the row survives and the caller
+		// can retry. Dropping it here would leave the object unreachable.
+		if err := deleteFileBlobs(ctx, s.store, file.StorageKey, file.ChunkCount); err != nil {
+			return fmt.Errorf("delete stored file: %w", err)
+		}
+	}
+
 	return s.repo.Delete(ctx, secret.ID)
 }
 

@@ -49,15 +49,15 @@ func NewRouter(db *pgxpool.Pool, cfg *config.Config) *chi.Mux {
 	apiKeyRepo := repository.NewAPIKeyRepository(db)
 	fileRepo := repository.NewFileRepository(db)
 
-	// Services
-	secretSvc := service.NewSecretService(secretRepo, cfg)
-
 	// Storage backend
 	store, err := initStorage(cfg)
 	if err != nil {
 		slog.Error("failed to initialize storage backend", "error", err)
 		panic(fmt.Sprintf("failed to initialize storage backend: %v", err))
 	}
+
+	// Services
+	secretSvc := service.NewSecretService(secretRepo, fileRepo, store, cfg)
 
 	// Handlers
 	healthH := handler.NewHealthHandler()
