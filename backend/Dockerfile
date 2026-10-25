@@ -26,7 +26,7 @@ COPY . .
 CMD ["air", "-c", ".air.toml"]
 
 # Production stage
-FROM alpine:3.19 AS production
+FROM alpine:3.23 AS production
 
 RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
