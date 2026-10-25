@@ -1,0 +1,21 @@
+# Garage object store, single node.
+# Secrets are supplied through the environment (GARAGE_RPC_SECRET,
+# GARAGE_ADMIN_TOKEN) so this file stays safe to commit.
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir     = "/var/lib/garage/data"
+db_engine    = "lmdb"
+
+# Single node deployment: one copy of each object.
+replication_factor = 1
+
+rpc_bind_addr   = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+
+[s3_api]
+# Must match the backend's S3_REGION (defaults to us-east-1 in config.go).
+s3_region     = "us-east-1"
+api_bind_addr = "[::]:3900"
+
+[admin]
+api_bind_addr = "[::]:3903"
