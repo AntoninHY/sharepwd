@@ -6,6 +6,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -26,7 +27,15 @@ func New(db *pgxpool.Pool, cfg *config.Config) *Server {
 	router := NewRouter(db, cfg)
 
 	secretRepo := repository.NewSecretRepository(db)
-	cleanupSvc := service.NewCleanupService(secretRepo, cfg)
+
+	// The sweep deletes stored files alongside the rows, so it needs the same
+	// backend the request path uses.
+	store, err := initStorage(cfg)
+	if err != nil {
+		slog.Error("failed to init storage for cleanup worker", "error", err)
+		panic(fmt.Sprintf("failed to init storage for cleanup worker: %v", err))
+	}
+	cleanupSvc := service.NewCleanupService(secretRepo, store, cfg)
 
 	return &Server{
 		httpServer: &http.Server{

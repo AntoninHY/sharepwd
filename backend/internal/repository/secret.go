@@ -157,11 +157,61 @@ func (r *SecretRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-func (r *SecretRepository) DeleteExpired(ctx context.Context) (int64, error) {
-	query := `DELETE FROM secrets WHERE 
-		(expires_at IS NOT NULL AND expires_at < NOW() AND is_expired = true)
+// expiredSecretsPredicate selects the secrets whose lifetime is over. It is
+// shared by DeleteExpired and ListFilesOfExpiredSecrets so the blobs that get
+// deleted can never drift from the rows that get deleted. Column names are left
+// unqualified on purpose: the files table carries none of them, so the
+// predicate reads the same whether or not secrets is joined.
+const expiredSecretsPredicate = `(expires_at IS NOT NULL AND expires_at < NOW() AND is_expired = true)
 		OR (is_expired = true AND expired_at < NOW() - INTERVAL '24 hours')`
-	result, err := r.db.Exec(ctx, query)
+
+// ExpiredFileBlob locates the stored chunks of a file attached to a secret that
+// the next DeleteExpired call will remove.
+type ExpiredFileBlob struct {
+	SecretID   uuid.UUID
+	StorageKey string
+	ChunkCount int
+}
+
+// ListFilesOfExpiredSecrets returns the files attached to the secrets that
+// DeleteExpired is about to remove. It has to run first: files.secret_id is
+// ON DELETE CASCADE, so deleting the secret takes storage_key with it and
+// leaves the objects with nothing pointing at them.
+func (r *SecretRepository) ListFilesOfExpiredSecrets(ctx context.Context) ([]ExpiredFileBlob, error) {
+	query := `SELECT f.secret_id, f.storage_key, f.chunk_count
+		FROM files f
+		JOIN secrets s ON s.id = f.secret_id
+		WHERE ` + expiredSecretsPredicate
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var blobs []ExpiredFileBlob
+	for rows.Next() {
+		var b ExpiredFileBlob
+		if err := rows.Scan(&b.SecretID, &b.StorageKey, &b.ChunkCount); err != nil {
+			return nil, err
+		}
+		blobs = append(blobs, b)
+	}
+	return blobs, rows.Err()
+}
+
+// DeleteExpired removes the secrets whose lifetime is over. Secrets listed in
+// keep are left in place for the next sweep: their objects could not be
+// removed, and dropping the row now would strand them in storage for good.
+func (r *SecretRepository) DeleteExpired(ctx context.Context, keep []uuid.UUID) (int64, error) {
+	if keep == nil {
+		// A nil slice encodes as SQL NULL, which would make the comparison
+		// below NULL and delete nothing at all.
+		keep = []uuid.UUID{}
+	}
+
+	query := `DELETE FROM secrets WHERE (` + expiredSecretsPredicate + `) AND NOT (id = ANY($1))`
+	result, err := r.db.Exec(ctx, query, keep)
 	if err != nil {
 		return 0, err
 	}
