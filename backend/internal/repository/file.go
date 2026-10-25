@@ -54,6 +54,14 @@ func (r *FileRepository) GetBySecretID(ctx context.Context, secretID uuid.UUID) 
 	return &f, nil
 }
 
+// Delete removes a stored file record. Callers delete the objects it points at
+// first: the row holds the only copy of their storage key.
+func (r *FileRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM files WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, id)
+	return err
+}
+
 func (r *FileRepository) MarkUploadComplete(ctx context.Context, id uuid.UUID, totalSize int64) error {
 	query := `UPDATE files SET upload_complete = true, file_size = $2 WHERE id = $1`
 	_, err := r.db.Exec(ctx, query, id, totalSize)
