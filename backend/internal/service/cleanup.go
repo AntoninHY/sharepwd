@@ -17,12 +17,13 @@ import (
 
 type CleanupService struct {
 	secretRepo *repository.SecretRepository
+	fileRepo   *repository.FileRepository
 	store      storage.Storage
 	config     *config.Config
 }
 
-func NewCleanupService(secretRepo *repository.SecretRepository, store storage.Storage, cfg *config.Config) *CleanupService {
-	return &CleanupService{secretRepo: secretRepo, store: store, config: cfg}
+func NewCleanupService(secretRepo *repository.SecretRepository, fileRepo *repository.FileRepository, store storage.Storage, cfg *config.Config) *CleanupService {
+	return &CleanupService{secretRepo: secretRepo, fileRepo: fileRepo, store: store, config: cfg}
 }
 
 func (s *CleanupService) Start(ctx context.Context) {
@@ -49,6 +50,8 @@ func (s *CleanupService) run(ctx context.Context) {
 		return
 	}
 
+	released := s.releaseFilesPastDownloadWindow(ctx)
+
 	kept, purged, err := s.purgeBlobs(ctx)
 	if err != nil {
 		// Without the storage keys, deleting the rows now would strand every
@@ -63,11 +66,54 @@ func (s *CleanupService) run(ctx context.Context) {
 		return
 	}
 
-	if marked > 0 || deleted > 0 || purged > 0 {
+	if marked > 0 || deleted > 0 || purged > 0 || released > 0 {
 		slog.Info("cleanup completed",
 			"marked", marked, "deleted", deleted,
+			"files_released", released,
 			"blobs_purged", purged, "blobs_retried_next_sweep", len(kept))
 	}
+}
+
+// releaseFilesPastDownloadWindow removes the stored file of every expired
+// secret whose grace period has run out, and then the record pointing at it.
+//
+// A secret is marked expired the moment it is burned or its deadline passes,
+// while its row lives on for the ordinary retention period. Its file only has
+// to survive that moment long enough for the reader to pull the chunks, which
+// is what the grace period covers. Keeping it any longer serves no one.
+//
+// Dropping the record is what ends access: both file routes resolve the record
+// first and answer "not found" when it is gone, so no authorisation logic has
+// to change. The objects go before the record, because the record holds the
+// only copy of their storage key.
+//
+// Storage keys embed the secret access token and are therefore never logged.
+func (s *CleanupService) releaseFilesPastDownloadWindow(ctx context.Context) int {
+	cutoff := time.Now().Add(-s.config.GracePeriod)
+
+	files, err := s.secretRepo.ListFilesPastDownloadWindow(ctx, cutoff)
+	if err != nil {
+		slog.Error("failed to list files past their download window", "error", err)
+		return 0
+	}
+
+	released := 0
+	for _, f := range files {
+		if err := deleteFileBlobs(ctx, s.store, f.StorageKey, f.ChunkCount); err != nil {
+			// The record stays, so the next sweep tries again.
+			slog.Error("failed to delete stored file past its download window",
+				"secret_id", f.SecretID, "error", err)
+			continue
+		}
+		if err := s.fileRepo.Delete(ctx, f.FileID); err != nil {
+			slog.Error("failed to delete file record past its download window",
+				"secret_id", f.SecretID, "error", err)
+			continue
+		}
+		released++
+	}
+
+	return released
 }
 
 // purgeBlobs removes the stored files of the secrets the sweep is about to

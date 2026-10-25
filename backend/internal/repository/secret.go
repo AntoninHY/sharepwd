@@ -165,9 +165,9 @@ func (r *SecretRepository) Delete(ctx context.Context, id uuid.UUID) error {
 const expiredSecretsPredicate = `(expires_at IS NOT NULL AND expires_at < NOW() AND is_expired = true)
 		OR (is_expired = true AND expired_at < NOW() - INTERVAL '24 hours')`
 
-// ExpiredFileBlob locates the stored chunks of a file attached to a secret that
-// the next DeleteExpired call will remove.
+// ExpiredFileBlob locates a stored file and the chunks holding its content.
 type ExpiredFileBlob struct {
+	FileID     uuid.UUID
 	SecretID   uuid.UUID
 	StorageKey string
 	ChunkCount int
@@ -178,12 +178,36 @@ type ExpiredFileBlob struct {
 // ON DELETE CASCADE, so deleting the secret takes storage_key with it and
 // leaves the objects with nothing pointing at them.
 func (r *SecretRepository) ListFilesOfExpiredSecrets(ctx context.Context) ([]ExpiredFileBlob, error) {
-	query := `SELECT f.secret_id, f.storage_key, f.chunk_count
+	query := `SELECT f.id, f.secret_id, f.storage_key, f.chunk_count
 		FROM files f
 		JOIN secrets s ON s.id = f.secret_id
 		WHERE ` + expiredSecretsPredicate
 
-	rows, err := r.db.Query(ctx, query)
+	return scanFileBlobs(r.db.Query(ctx, query))
+}
+
+// ListFilesPastDownloadWindow returns the stored files of secrets whose content
+// is already gone and whose download window closed before cutoff.
+//
+// A secret is marked expired as soon as it is burned or its deadline passes,
+// but its row is kept for the ordinary retention period. The file it carries
+// only has to outlive that moment long enough for the reader to pull its
+// chunks, which is what the grace period is for. Past that point the file has
+// no reason to exist.
+func (r *SecretRepository) ListFilesPastDownloadWindow(ctx context.Context, cutoff time.Time) ([]ExpiredFileBlob, error) {
+	query := `SELECT f.id, f.secret_id, f.storage_key, f.chunk_count
+		FROM files f
+		JOIN secrets s ON s.id = f.secret_id
+		WHERE s.is_expired = true
+		  AND s.expired_at IS NOT NULL
+		  AND s.expired_at < $1`
+
+	return scanFileBlobs(r.db.Query(ctx, query, cutoff))
+}
+
+// scanFileBlobs drains a query returning the four ExpiredFileBlob columns, in
+// the order both callers above select them.
+func scanFileBlobs(rows pgx.Rows, err error) ([]ExpiredFileBlob, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +216,7 @@ func (r *SecretRepository) ListFilesOfExpiredSecrets(ctx context.Context) ([]Exp
 	var blobs []ExpiredFileBlob
 	for rows.Next() {
 		var b ExpiredFileBlob
-		if err := rows.Scan(&b.SecretID, &b.StorageKey, &b.ChunkCount); err != nil {
+		if err := rows.Scan(&b.FileID, &b.SecretID, &b.StorageKey, &b.ChunkCount); err != nil {
 			return nil, err
 		}
 		blobs = append(blobs, b)

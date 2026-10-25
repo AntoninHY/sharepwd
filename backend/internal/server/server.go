@@ -27,6 +27,7 @@ func New(db *pgxpool.Pool, cfg *config.Config) *Server {
 	router := NewRouter(db, cfg)
 
 	secretRepo := repository.NewSecretRepository(db)
+	fileRepo := repository.NewFileRepository(db)
 
 	// The sweep deletes stored files alongside the rows, so it needs the same
 	// backend the request path uses.
@@ -35,7 +36,7 @@ func New(db *pgxpool.Pool, cfg *config.Config) *Server {
 		slog.Error("failed to init storage for cleanup worker", "error", err)
 		panic(fmt.Sprintf("failed to init storage for cleanup worker: %v", err))
 	}
-	cleanupSvc := service.NewCleanupService(secretRepo, store, cfg)
+	cleanupSvc := service.NewCleanupService(secretRepo, fileRepo, store, cfg)
 
 	return &Server{
 		httpServer: &http.Server{
